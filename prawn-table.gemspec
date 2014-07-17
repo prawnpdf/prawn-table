@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name = "prawn-table"
-  spec.version = "0.0.1" #File.read(File.expand_path('VERSION', File.dirname(__FILE__))).strip
+  spec.version = File.read(File.expand_path('VERSION', File.dirname(__FILE__))).strip
   spec.platform = Gem::Platform::RUBY
   spec.summary = "Provides tables for PrawnPDF"
   spec.files =  Dir.glob("{examples,lib,spec,manual}/**/**/*") +
