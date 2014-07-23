@@ -320,7 +320,11 @@ module Prawn
         cells_this_page = []
 
         @cells.each do |cell|
-          if cell.height > (cell.y + offset) - ref_bounds.absolute_bottom &&
+          # we only need to run this test on the first cell in a row
+          # check if the rows height fits on the page
+          # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
+          if cell.column == 0 &&
+             row(cell.row).height_with_span > (cell.y + offset) - ref_bounds.absolute_bottom &&
              cell.row > started_new_page_at_row
             # Ink all cells on the current page
             if defined?(@before_rendering_page) && @before_rendering_page

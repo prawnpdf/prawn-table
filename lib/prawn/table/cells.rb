@@ -182,6 +182,13 @@ module Prawn
         aggregate_cell_values(:row, :height_ignoring_span, :max)
       end
 
+      # Returns the total height of all rows in the selected set
+      # including spanned cells if the cell is the master cell
+      #
+      def height_with_span
+        aggregate_cell_values(:row, :height, :max)
+      end
+
       # Supports setting arbitrary properties on a group of cells.
       #
       #   table.cells.row(3..6).background_color = 'cc0000'
