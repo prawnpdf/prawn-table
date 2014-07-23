@@ -804,6 +804,24 @@ describe "Prawn::Table" do
           'Line 2', 'Line 3']
     end
 
+    context 'when the last row of first page of a table has a rowspan > 1' do
+      it 'should move the cells below that rowspan cell to the next page' do
+        pdf = Prawn::Document.new
+
+        pdf.y = 100 # not enough room for the rowspan cell
+        pdf.table [
+            ['R0C0', 'R0C1', 'R0C2'],
+            ['R1C0', {content: 'R1C1', rowspan: 2}, 'R1C2'],
+            ['R2C0', 'R2C2'],
+        ]
+
+        output = PDF::Inspector::Page.analyze(pdf.render)
+        # Ensure we output the cells of row 2 on the new page only
+        output.pages[0][:strings].should == ['R0C0', 'R0C1', 'R0C2']
+        output.pages[1][:strings].should == ['R1C0', 'R1C1', 'R1C2', 'R2C0', 'R2C2']
+      end
+    end
+
     it "should draw background before borders, but only within pages" do
       seq = sequence("drawing_order")
 
