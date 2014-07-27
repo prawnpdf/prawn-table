@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.rubyforge_project = "prawn"
   spec.licenses = ['RUBY', 'GPL-2', 'GPL-3']
 
-  spec.add_development_dependency('prawn', '~> 1.2.0')
+  spec.add_development_dependency('prawn', '~> 1.2.1')
   spec.add_development_dependency('pdf-inspector', '~> 1.1.0')
   spec.add_development_dependency('yard')
   spec.add_development_dependency('rspec', '2.14.1')
