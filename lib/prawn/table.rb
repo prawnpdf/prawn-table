@@ -540,7 +540,15 @@ module Prawn
       rows_to_operate_on = @header_row.rows(row_of_header) if row_of_header
       rows_to_operate_on.each do |cell|
         cell.row = row
-        cell.dummy_cells.each {|c| c.row = row + c.row }
+        cell.dummy_cells.each {|c| 
+          if cell.rowspan > 1
+            # be sure to account for cells that span multiple rows
+            # in this case you need multiple row numbers
+            c.row += row
+          else
+            c.row = row
+          end
+        }
         page_of_cells << [cell, [cell.x + x_offset, y]]
       end
       rows_to_operate_on.height
