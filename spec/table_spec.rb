@@ -1274,6 +1274,32 @@ describe "Prawn::Table" do
 
   end
 
+  it "Prints table on one page when using subtable with colspan > 1", :unresolved, issue: 10 do
+    pdf = Prawn::Document.new(margin: [ 30, 71, 55, 71])
+
+    lines = "one\ntwo\nthree\nfour"
+
+    sub_table_lines = lines.split("\n").map do |line|
+      if line == "one"
+        [ { content: "#{line}", colspan: 2, size: 11} ]
+      else
+        [ { content: "\u2022"}, { content: "#{line}"} ]
+      end
+    end
+
+    sub_table = pdf.make_table(sub_table_lines,
+                               cell_style: { border_color: '00ff00'})
+
+    #outer table
+    pdf.table [[
+      { content: "Placeholder text", width: 200 },
+      { content: sub_table }
+    ]], width: 515, cell_style: { border_width: 1, border_color: 'ff0000' }
+
+    pdf.render
+    pdf.page_count.should == 1
+  end
+
   describe "An invalid table" do
 
     before(:each) do
