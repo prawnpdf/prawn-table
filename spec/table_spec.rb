@@ -69,6 +69,14 @@ describe "Prawn::Table" do
       output = PDF::Inspector::Page.analyze(pdf.render)
       output.pages[0][:strings][0..4].should == output.pages[1][:strings][0..4]
     end
+
+    it "should respect an explicit set table with", :issue => 6 do
+      data = [[{ :content => "Current Supplier: BLINKY LIGHTS COMPANY", :colspan => 4 }],
+        ["Current Supplier: BLINKY LIGHTS COMPANY", "611 kWh X $.090041", "$", "55.02"]]
+      pdf = Prawn::Document.new
+      table = Prawn::Table.new data, pdf, :width => pdf.bounds.width
+      table.column_widths.inject{|sum,x| sum + x }.should == pdf.bounds.width
+    end
   end
 
   describe "Text may be longer than the available space in a row on a single page" do
