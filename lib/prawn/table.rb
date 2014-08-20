@@ -417,14 +417,13 @@ module Prawn
         # (including the header), start the table on the next page.
         needed_height = row(0..number_of_header_rows).height
 
-        if needed_height < @pdf.y - @pdf.reference_bounds.absolute_bottom
-          # we've got enough room to fit the first row
-          return -1  
-        end
+        # we've got enough room to fit the first row
+        return -1 if needed_height < @pdf.y - @pdf.reference_bounds.absolute_bottom
 
         # start a new page
         @pdf.bounds.move_past_bottom
       end
+      
       # we're at the top of our bounds or are at the top of the new page
       return 0
     end
