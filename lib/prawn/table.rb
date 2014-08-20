@@ -478,9 +478,12 @@ module Prawn
     # page will not buy us any space if we are at the top.
     # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
     def initial_row_on_initial_page
-      if @pdf.y < @pdf.bounds.height + @pdf.bounds.absolute_bottom - Prawn::FLOAT_PRECISION
-        # have we got enough room to fit the first row
-        return -1 if row(0..number_of_header_rows).height < @pdf.y - @pdf.reference_bounds.absolute_bottom
+      unless fits_on_page?(@pdf.bounds.height)
+
+        needed_height = row(0..number_of_header_rows).height
+
+        # have we got enough room to fit the first row (including header row(s))
+        return -1 if fits_on_page?(needed_height)
 
         # If there isn't enough room left on the page to fit the first data row
         # (including the header), start the table on the next page.
@@ -489,6 +492,11 @@ module Prawn
 
       # we're at the top of our bounds or are at the top of the new page
       return 0
+    end
+
+    # do we have enough room to fit a given height on to the current page?
+    def fits_on_page?(needed_height)
+      needed_height < @pdf.y - (@pdf.bounds.absolute_bottom - Prawn::FLOAT_PRECISION)
     end
 
     # return the header rows
