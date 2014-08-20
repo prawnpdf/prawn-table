@@ -293,39 +293,17 @@ module Prawn
         cells_this_page = []
 
         @cells.each do |cell|
-          # we only need to run this test on the first cell in a row
-          # check if the rows height fails to fit on the page
-          # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
-          if cell.column == 0 &&
-             !row(cell.row).fits_on_current_page?(offset, ref_bounds) &&
-             cell.row > started_new_page_at_row
-            # Ink all cells on the current page
-            if defined?(@before_rendering_page) && @before_rendering_page
-              c = Cells.new(cells_this_page.map { |ci, _| ci })
-              @before_rendering_page.call(c)
-            end
-            if @header_row.nil? || cells_this_page.size > @header_row.size
-              Cell.draw_cells(cells_this_page)
-            end
+          if start_new_page?(cell, offset, ref_bounds, started_new_page_at_row) 
+            
+            # draw cells on the current page and then start a new one
+            draw_cells_and_start_new_page(cells_this_page, cell)
+
+            # reset array of cells for the new page
             cells_this_page = []
 
-            # start a new page or column
-            @pdf.bounds.move_past_bottom
-            x_offset = @pdf.bounds.left_side - @pdf.bounds.absolute_left
-            if cell.row > 0 && @header
-              if @header.is_a? Integer
-                header_height = 0
-                y_coord = @pdf.cursor
-                @header.times do |h|
-                  additional_header_height = add_header(cells_this_page, x_offset, y_coord-header_height, cell.row-1, h)
-                  header_height += additional_header_height
-                end
-              else
-                header_height = add_header(cells_this_page, x_offset, @pdf.cursor, cell.row-1)
-              end
-            else
-              header_height = 0
-            end
+            # add a header (if given) at the top of the new page
+            header_height = add_header(cell.row, cells_this_page)
+
             offset = @pdf.y - cell.y - header_height
             started_new_page_at_row = cell.row
           end
@@ -342,28 +320,18 @@ module Prawn
           y -= @pdf.bounds.absolute_bottom
 
           # Set background color, if any.
-          if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
-            # Ensure coloring restarts on every page (to make sure the header
-            # and first row of a page are not colored the same way).
-            if @header.is_a? Integer
-              rows = @header
-            elsif @header
-              rows = 1
-            else
-              rows = 0
-            end
-            index = cell.row - [started_new_page_at_row, rows].max
+          cell = set_background_color(cell, started_new_page_at_row)
 
-            cell.background_color ||= @row_colors[index % @row_colors.length]
-          end
-
+          # add the current cell to the cells array for the current page
           cells_this_page << [cell, [x, y]]
+
+          # remember the y position
           last_y = y
         end
         # Draw the last page of cells
         if defined?(@before_rendering_page) && @before_rendering_page
           c = Cells.new(cells_this_page.map { |ci, _| ci })
-          @before_rendering_page.call(c)
+          @before_rendering_page.cal§l(c)
         end
         Cell.draw_cells(cells_this_page)
 
@@ -371,6 +339,70 @@ module Prawn
       end
     end
 
+    # sets the background color (if necessary) for the given cell
+    def set_background_color(cell, started_new_page_at_row)
+      if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
+        # Ensure coloring restarts on every page (to make sure the header
+        # and first row of a page are not colored the same way).
+        rows = number_of_header_rows
+
+        index = cell.row - [started_new_page_at_row, rows].max
+
+        cell.background_color ||= @row_colors[index % @row_colors.length]
+      end
+      cell
+    end
+
+    # number of rows of the header
+    # @return [Integer] the number of rows of the header
+    def number_of_header_rows
+      # header may be set to any integer value -> number of rows
+      if @header.is_a? Integer
+        return @header
+      # header may be set to true -> first row is repeated
+      elsif @header
+        return 1
+      # defaults to 0 header rows
+      else
+        return 0
+      end
+    end
+
+    # should we start a new page? (does the current row fail to fit on this page)
+    def start_new_page?(cell, offset, ref_bounds, started_new_page_at_row)
+      # we only need to run this test on the first cell in a row
+      # check if the rows height fails to fit on the page
+      # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
+      (cell.column == 0 &&
+       !row(cell.row).fits_on_current_page?(offset, ref_bounds) &&
+       cell.row > started_new_page_at_row)
+    end
+
+    def draw_cells_and_start_new_page(cells_this_page, cell)
+      # Ink all cells on the current page
+      if defined?(@before_rendering_page) && @before_rendering_page
+        c = Cells.new(cells_this_page.map { |ci, _| ci })
+        @before_rendering_page.call(c)
+      end
+      if @header_row.nil? || cells_this_page.size > @header_row.size
+        Cell.draw_cells(cells_this_page)
+      end
+      
+      # start a new page or column
+      @pdf.bounds.move_past_bottom
+    end
+
+    # Determine whether we're at the top of the current bounds (margin box or
+    # bounding box). If we're at the top, we couldn't gain any more room by
+    # breaking to the next page -- this means, in particular, that if the
+    # first row is taller than the margin box, we will only move to the next
+    # page if we're below the top. Some floating-point tolerance is added to
+    # the calculation.
+    #
+    # Note that we use the actual bounds, not the reference bounds. This is
+    # because even if we are in a stretchy bounding box, flowing to the next
+    # page will not buy us any space if we are at the top.
+    # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
     def initial_row_on_initial_page
       if @pdf.y > @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
         # we're at the top of our bounds
@@ -380,11 +412,7 @@ module Prawn
         # (excluding the header), start the table on the next page.
         needed_height = row(0).height
         if @header
-          if @header.is_a? Integer
-            needed_height += row(1..@header).height
-          else
-            needed_height += row(1).height
-          end
+          needed_height += row(1..number_of_header_rows).height
         end
         if needed_height > @pdf.y - @pdf.reference_bounds.absolute_bottom
           @pdf.bounds.move_past_bottom
@@ -396,17 +424,16 @@ module Prawn
       end
     end
 
+    # return the header rows
+    # @api private
     def header_rows
       header_rows = Cells.new
-      if @header.is_a? Integer
-        @header.times do |r|
-          row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
-        end
-      else
-        row(0).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+      number_of_header_rows.times do |r|
+        row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
       end
       header_rows
     end
+
     # Calculate and return the constrained column widths, taking into account
     # each cell's min_width, max_width, and any user-specified constraints on
     # the table or column size.
@@ -537,6 +564,19 @@ module Prawn
       cells
     end
 
+    def add_header(row_number, cells_this_page)
+      x_offset = @pdf.bounds.left_side - @pdf.bounds.absolute_left
+      header_height = 0
+      if row_number > 0 && @header
+        y_coord = @pdf.cursor
+        number_of_header_rows.times do |h|
+          additional_header_height = add_one_header_row(cells_this_page, x_offset, y_coord-header_height, row_number-1, h)
+          header_height += additional_header_height
+        end        
+      end
+      header_height
+    end
+
     # Add the header row(s) to the given array of cells at the given y-position.
     # Number the row with the given +row+ index, so that the header appears (in
     # any Cells built for this page) immediately prior to the first data row on
@@ -544,7 +584,7 @@ module Prawn
     #
     # Return the height of the header.
     #
-    def add_header(page_of_cells, x_offset, y, row, row_of_header=nil)
+    def add_one_header_row(page_of_cells, x_offset, y, row, row_of_header=nil)
       rows_to_operate_on = @header_row
       rows_to_operate_on = @header_row.rows(row_of_header) if row_of_header
       rows_to_operate_on.each do |cell|
