@@ -406,13 +406,9 @@ module Prawn
     def initial_row_on_initial_page
       if @pdf.y < @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
         # If there isn't enough room left on the page to fit the first data row
-        # (excluding the header), start the table on the next page.
-        needed_height = row(0).height
+        # (including the header), start the table on the next page.
+        needed_height = row(0..number_of_header_rows).height
 
-        if @header
-          needed_height += row(1..number_of_header_rows).height
-        end
-        
         if needed_height < @pdf.y - @pdf.reference_bounds.absolute_bottom
           # we've got enough room to fit the first row
           return -1  
