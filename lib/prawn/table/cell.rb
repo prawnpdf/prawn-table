@@ -444,6 +444,12 @@ module Prawn
         @point[0] = val
       end
 
+      def relative_x
+        # Translate coordinates to the bounds we are in, since drawing is
+        # relative to the cursor, not ref_bounds.
+        x + @pdf.bounds.left_side - @pdf.bounds.absolute_left
+      end
+
       # y-position of the cell within the parent bounds.
       #
       def y
@@ -454,6 +460,10 @@ module Prawn
       #
       def y=(val)
         @point[1] = val
+      end
+
+      def relative_y(offset = 0)
+        y + offset - @pdf.bounds.absolute_bottom
       end
 
       # Sets padding on this cell. The argument can be one of:

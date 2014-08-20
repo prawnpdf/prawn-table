@@ -261,8 +261,6 @@ module Prawn
         # flow to a new column / page.
         ref_bounds = @pdf.reference_bounds
 
-        last_y = @pdf.y
-
         # Determine whether we're at the top of the current bounds (margin box or
         # bounding box). If we're at the top, we couldn't gain any more room by
         # breaking to the next page -- this means, in particular, that if the
@@ -292,45 +290,27 @@ module Prawn
         cells_this_page = []
 
         @cells.each do |cell|
-          if start_new_page?(cell, offset, ref_bounds, started_new_page_at_row) 
-            
+          if start_new_page?(cell, offset, ref_bounds) 
             # draw cells on the current page and then start a new one
-            ink_and_draw_cells_and_start_new_page(cells_this_page)
-
+            # this will also add a header to the new page if a header is set
             # reset array of cells for the new page
-            cells_this_page = []
+            cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
 
-            # add a header (if given) at the top of the new page
-            header_height = add_header(cell.row, cells_this_page)
-
-            offset = @pdf.y - cell.y - header_height
+            # remember the current row for background coloring
             started_new_page_at_row = cell.row
           end
-
-          # Don't modify cell.x / cell.y here, as we want to reuse the original
-          # values when re-inking the table. #draw should be able to be called
-          # multiple times.
-          x, y = cell.x, cell.y
-          y += offset
-
-          # Translate coordinates to the bounds we are in, since drawing is
-          # relative to the cursor, not ref_bounds.
-          x += @pdf.bounds.left_side - @pdf.bounds.absolute_left
-          y -= @pdf.bounds.absolute_bottom
 
           # Set background color, if any.
           cell = set_background_color(cell, started_new_page_at_row)
 
           # add the current cell to the cells array for the current page
-          cells_this_page << [cell, [x, y]]
-
-          # remember the y position
-          last_y = y
+          cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
         end
+
         # Draw the last page of cells
         ink_and_draw_cells(cells_this_page)
 
-        @pdf.move_cursor_to(last_y - @cells.last.height)
+        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
       end
     end
 
@@ -430,13 +410,12 @@ module Prawn
     end
 
     # should we start a new page? (does the current row fail to fit on this page)
-    def start_new_page?(cell, offset, ref_bounds, started_new_page_at_row)
+    def start_new_page?(cell, offset, ref_bounds)
       # we only need to run this test on the first cell in a row
       # check if the rows height fails to fit on the page
       # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
-      (cell.column == 0 &&
-       !row(cell.row).fits_on_current_page?(offset, ref_bounds) &&
-       cell.row > started_new_page_at_row)
+      (cell.column == 0 && cell.row > 0 &&
+       !row(cell.row).fits_on_current_page?(offset, ref_bounds))
     end
 
     # ink cells and then draw them
@@ -446,7 +425,7 @@ module Prawn
     end
 
     # ink and draw cells, then start a new page
-    def ink_and_draw_cells_and_start_new_page(cells_this_page)
+    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
       # don't draw only a header
       draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
       
@@ -454,6 +433,15 @@ module Prawn
       
       # start a new page or column
       @pdf.bounds.move_past_bottom
+
+      offset = (@pdf.y - cell.y)
+
+      cells_next_page = []
+
+      add_header(cell.row, cells_next_page)
+
+      # reset cells_this_page in calling function and return new offset
+      return cells_next_page, offset
     end
 
     # Ink all cells on the current page
@@ -580,7 +568,6 @@ module Prawn
           header_height += additional_header_height
         end        
       end
-      header_height
     end
 
     # Add the header row(s) to the given array of cells at the given y-position.
