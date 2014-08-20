@@ -478,20 +478,20 @@ module Prawn
     # page will not buy us any space if we are at the top.
     # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
     def initial_row_on_initial_page
-      unless fits_on_page?(@pdf.bounds.height)
+      # we're at the top of our bounds
+      return 0 if fits_on_page?(@pdf.bounds.height)
 
-        needed_height = row(0..number_of_header_rows).height
+      needed_height = row(0..number_of_header_rows).height
 
-        # have we got enough room to fit the first row (including header row(s))
-        return -1 if fits_on_page?(needed_height)
+      # have we got enough room to fit the first row (including header row(s))
+      return -1 if fits_on_page?(needed_height)
 
-        # If there isn't enough room left on the page to fit the first data row
-        # (including the header), start the table on the next page.
-        @pdf.bounds.move_past_bottom
-      end
+      # If there isn't enough room left on the page to fit the first data row
+      # (including the header), start the table on the next page.
+      @pdf.bounds.move_past_bottom
 
-      # we're at the top of our bounds or are at the top of the new page
-      return 0
+      # we are at the top of a new page
+      0
     end
 
     # do we have enough room to fit a given height on to the current page?
