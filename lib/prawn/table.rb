@@ -331,7 +331,7 @@ module Prawn
         # Draw the last page of cells
         if defined?(@before_rendering_page) && @before_rendering_page
           c = Cells.new(cells_this_page.map { |ci, _| ci })
-          @before_rendering_page.cal§l(c)
+          @before_rendering_page.call(c)
         end
         Cell.draw_cells(cells_this_page)
 
@@ -404,24 +404,25 @@ module Prawn
     # page will not buy us any space if we are at the top.
     # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
     def initial_row_on_initial_page
-      if @pdf.y > @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
-        # we're at the top of our bounds
-        return 0
-      else
+      if @pdf.y < @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
         # If there isn't enough room left on the page to fit the first data row
         # (excluding the header), start the table on the next page.
         needed_height = row(0).height
+
         if @header
           needed_height += row(1..number_of_header_rows).height
         end
-        if needed_height > @pdf.y - @pdf.reference_bounds.absolute_bottom
-          @pdf.bounds.move_past_bottom
-          # we are at the top of the new page
-          return 0
+        
+        if needed_height < @pdf.y - @pdf.reference_bounds.absolute_bottom
+          # we've got enough room to fit the first row
+          return -1  
         end
-        # we've got enough room to fit the first row
-        return -1
+
+        # start a new page
+        @pdf.bounds.move_past_bottom
       end
+      # we're at the top of our bounds or are at the top of the new page
+      return 0
     end
 
     # return the header rows
