@@ -296,7 +296,7 @@ module Prawn
           if start_new_page?(cell, offset, ref_bounds, started_new_page_at_row) 
             
             # draw cells on the current page and then start a new one
-            draw_cells_and_start_new_page(cells_this_page, cell)
+            ink_and_draw_cells_and_start_new_page(cells_this_page)
 
             # reset array of cells for the new page
             cells_this_page = []
@@ -329,113 +329,10 @@ module Prawn
           last_y = y
         end
         # Draw the last page of cells
-        draw_last_page_of_cells(cells_this_page)
+        ink_and_draw_cells(cells_this_page)
 
         @pdf.move_cursor_to(last_y - @cells.last.height)
       end
-    end
-
-
-    def draw_last_page_of_cells(cells_this_page)
-      ink_cells(cells_this_page)
-      Cell.draw_cells(cells_this_page)
-    end
-
-    # sets the background color (if necessary) for the given cell
-    def set_background_color(cell, started_new_page_at_row)
-      if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
-        # Ensure coloring restarts on every page (to make sure the header
-        # and first row of a page are not colored the same way).
-        rows = number_of_header_rows
-
-        index = cell.row - [started_new_page_at_row, rows].max
-
-        cell.background_color ||= @row_colors[index % @row_colors.length]
-      end
-      cell
-    end
-
-    # number of rows of the header
-    # @return [Integer] the number of rows of the header
-    def number_of_header_rows
-      # header may be set to any integer value -> number of rows
-      if @header.is_a? Integer
-        return @header
-      # header may be set to true -> first row is repeated
-      elsif @header
-        return 1
-      # defaults to 0 header rows
-      else
-        return 0
-      end
-    end
-
-    # should we start a new page? (does the current row fail to fit on this page)
-    def start_new_page?(cell, offset, ref_bounds, started_new_page_at_row)
-      # we only need to run this test on the first cell in a row
-      # check if the rows height fails to fit on the page
-      # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
-      (cell.column == 0 &&
-       !row(cell.row).fits_on_current_page?(offset, ref_bounds) &&
-       cell.row > started_new_page_at_row)
-    end
-
-    def draw_cells_and_start_new_page(cells_this_page, cell)
-      # Ink all cells on the current page
-      ink_cells(cells_this_page)
-
-      if @header_row.nil? || cells_this_page.size > @header_row.size
-        Cell.draw_cells(cells_this_page)
-      end
-      
-      # start a new page or column
-      @pdf.bounds.move_past_bottom
-    end
-
-    # Ink all cells on the current page
-    def ink_cells(cells_this_page)
-      if defined?(@before_rendering_page) && @before_rendering_page
-        c = Cells.new(cells_this_page.map { |ci, _| ci })
-        @before_rendering_page.call(c)
-      end
-    end
-
-    # Determine whether we're at the top of the current bounds (margin box or
-    # bounding box). If we're at the top, we couldn't gain any more room by
-    # breaking to the next page -- this means, in particular, that if the
-    # first row is taller than the margin box, we will only move to the next
-    # page if we're below the top. Some floating-point tolerance is added to
-    # the calculation.
-    #
-    # Note that we use the actual bounds, not the reference bounds. This is
-    # because even if we are in a stretchy bounding box, flowing to the next
-    # page will not buy us any space if we are at the top.
-    # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
-    def initial_row_on_initial_page
-      if @pdf.y < @pdf.bounds.height + @pdf.bounds.absolute_bottom - Prawn::FLOAT_PRECISION
-        # If there isn't enough room left on the page to fit the first data row
-        # (including the header), start the table on the next page.
-        needed_height = row(0..number_of_header_rows).height
-
-        # we've got enough room to fit the first row
-        return -1 if needed_height < @pdf.y - @pdf.reference_bounds.absolute_bottom
-
-        # start a new page
-        @pdf.bounds.move_past_bottom
-      end
-
-      # we're at the top of our bounds or are at the top of the new page
-      return 0
-    end
-
-    # return the header rows
-    # @api private
-    def header_rows
-      header_rows = Cells.new
-      number_of_header_rows.times do |r|
-        row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
-      end
-      header_rows
     end
 
     # Calculate and return the constrained column widths, taking into account
@@ -504,6 +401,108 @@ module Prawn
     end
 
     protected
+    
+    # sets the background color (if necessary) for the given cell
+    def set_background_color(cell, started_new_page_at_row)
+      if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
+        # Ensure coloring restarts on every page (to make sure the header
+        # and first row of a page are not colored the same way).
+        rows = number_of_header_rows
+
+        index = cell.row - [started_new_page_at_row, rows].max
+
+        cell.background_color ||= @row_colors[index % @row_colors.length]
+      end
+      cell
+    end
+
+    # number of rows of the header
+    # @return [Integer] the number of rows of the header
+    def number_of_header_rows
+      # header may be set to any integer value -> number of rows
+      if @header.is_a? Integer
+        return @header
+      # header may be set to true -> first row is repeated
+      elsif @header
+        return 1
+      # defaults to 0 header rows
+      else
+        return 0
+      end
+    end
+
+    # should we start a new page? (does the current row fail to fit on this page)
+    def start_new_page?(cell, offset, ref_bounds, started_new_page_at_row)
+      # we only need to run this test on the first cell in a row
+      # check if the rows height fails to fit on the page
+      # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
+      (cell.column == 0 &&
+       !row(cell.row).fits_on_current_page?(offset, ref_bounds) &&
+       cell.row > started_new_page_at_row)
+    end
+
+    # ink cells and then draw them
+    def ink_and_draw_cells(cells_this_page, draw_cells = true)
+      ink_cells(cells_this_page)
+      Cell.draw_cells(cells_this_page) if draw_cells
+    end
+
+    # ink and draw cells, then start a new page
+    def ink_and_draw_cells_and_start_new_page(cells_this_page)
+      # don't draw only a header
+      draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
+      
+      ink_and_draw_cells(cells_this_page, draw_cells)
+      
+      # start a new page or column
+      @pdf.bounds.move_past_bottom
+    end
+
+    # Ink all cells on the current page
+    def ink_cells(cells_this_page)
+      if defined?(@before_rendering_page) && @before_rendering_page
+        c = Cells.new(cells_this_page.map { |ci, _| ci })
+        @before_rendering_page.call(c)
+      end
+    end
+
+    # Determine whether we're at the top of the current bounds (margin box or
+    # bounding box). If we're at the top, we couldn't gain any more room by
+    # breaking to the next page -- this means, in particular, that if the
+    # first row is taller than the margin box, we will only move to the next
+    # page if we're below the top. Some floating-point tolerance is added to
+    # the calculation.
+    #
+    # Note that we use the actual bounds, not the reference bounds. This is
+    # because even if we are in a stretchy bounding box, flowing to the next
+    # page will not buy us any space if we are at the top.
+    # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
+    def initial_row_on_initial_page
+      if @pdf.y < @pdf.bounds.height + @pdf.bounds.absolute_bottom - Prawn::FLOAT_PRECISION
+        # If there isn't enough room left on the page to fit the first data row
+        # (including the header), start the table on the next page.
+        needed_height = row(0..number_of_header_rows).height
+
+        # we've got enough room to fit the first row
+        return -1 if needed_height < @pdf.y - @pdf.reference_bounds.absolute_bottom
+
+        # start a new page
+        @pdf.bounds.move_past_bottom
+      end
+
+      # we're at the top of our bounds or are at the top of the new page
+      return 0
+    end
+
+    # return the header rows
+    # @api private
+    def header_rows
+      header_rows = Cells.new
+      number_of_header_rows.times do |r|
+        row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+      end
+      header_rows
+    end
 
     # Converts the array of cellable objects given into instances of
     # Prawn::Table::Cell, and sets up their in-table properties so that they
