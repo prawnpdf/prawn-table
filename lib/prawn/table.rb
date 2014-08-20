@@ -329,14 +329,16 @@ module Prawn
           last_y = y
         end
         # Draw the last page of cells
-        if defined?(@before_rendering_page) && @before_rendering_page
-          c = Cells.new(cells_this_page.map { |ci, _| ci })
-          @before_rendering_page.call(c)
-        end
-        Cell.draw_cells(cells_this_page)
+        draw_last_page_of_cells(cells_this_page)
 
         @pdf.move_cursor_to(last_y - @cells.last.height)
       end
+    end
+
+
+    def draw_last_page_of_cells(cells_this_page)
+      ink_cells(cells_this_page)
+      Cell.draw_cells(cells_this_page)
     end
 
     # sets the background color (if necessary) for the given cell
@@ -380,16 +382,22 @@ module Prawn
 
     def draw_cells_and_start_new_page(cells_this_page, cell)
       # Ink all cells on the current page
-      if defined?(@before_rendering_page) && @before_rendering_page
-        c = Cells.new(cells_this_page.map { |ci, _| ci })
-        @before_rendering_page.call(c)
-      end
+      ink_cells(cells_this_page)
+
       if @header_row.nil? || cells_this_page.size > @header_row.size
         Cell.draw_cells(cells_this_page)
       end
       
       # start a new page or column
       @pdf.bounds.move_past_bottom
+    end
+
+    # Ink all cells on the current page
+    def ink_cells(cells_this_page)
+      if defined?(@before_rendering_page) && @before_rendering_page
+        c = Cells.new(cells_this_page.map { |ci, _| ci })
+        @before_rendering_page.call(c)
+      end
     end
 
     # Determine whether we're at the top of the current bounds (margin box or
