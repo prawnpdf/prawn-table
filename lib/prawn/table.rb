@@ -258,11 +258,6 @@ module Prawn
     #
     def draw
       with_position do
-        # The cell y-positions are based on an infinitely long canvas. The offset
-        # keeps track of how much we have to add to the original, theoretical
-        # y-position to get to the actual position on the current page.
-        offset = @pdf.y
-
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
         ref_bounds = @pdf.reference_bounds
@@ -279,41 +274,19 @@ module Prawn
         # Note that we use the actual bounds, not the reference bounds. This is
         # because even if we are in a stretchy bounding box, flowing to the next
         # page will not buy us any space if we are at the top.
-        if @pdf.y > @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
-          # we're at the top of our bounds
-          started_new_page_at_row = 0
-        else
-          started_new_page_at_row = -1
+        #
+        # initial_row_on_initial_page may return 0 (already at the top OR created
+        # a new page) or -1 (enough space)
+        started_new_page_at_row = initial_row_on_initial_page
 
-          # If there isn't enough room left on the page to fit the first data row
-          # (excluding the header), start the table on the next page.
-          needed_height = row(0).height
-          if @header
-            if @header.is_a? Integer
-              needed_height += row(1..@header).height
-            else
-              needed_height += row(1).height
-            end
-          end
-          if needed_height > @pdf.y - ref_bounds.absolute_bottom
-            @pdf.bounds.move_past_bottom
-            offset = @pdf.y
-            started_new_page_at_row = 0
-          end
-        end
+        # The cell y-positions are based on an infinitely long canvas. The offset
+        # keeps track of how much we have to add to the original, theoretical
+        # y-position to get to the actual position on the current page.
+        offset = @pdf.y
 
         # Duplicate each cell of the header row into @header_row so it can be
         # modified in before_rendering_page callbacks.
-        if @header
-          @header_row = Cells.new
-          if @header.is_a? Integer
-            @header.times do |r|
-              row(r).each { |cell| @header_row[cell.row, cell.column] = cell.dup }
-            end
-          else
-            row(0).each { |cell| @header_row[cell.row, cell.column] = cell.dup }
-          end
-        end
+        @header_row = header_rows if @header
 
         # Track cells to be drawn on this page. They will all be drawn when this
         # page is finished.
@@ -321,10 +294,10 @@ module Prawn
 
         @cells.each do |cell|
           # we only need to run this test on the first cell in a row
-          # check if the rows height fits on the page
+          # check if the rows height fails to fit on the page
           # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
           if cell.column == 0 &&
-             row(cell.row).height_with_span > (cell.y + offset) - ref_bounds.absolute_bottom &&
+             !row(cell.row).fits_on_current_page?(offset, ref_bounds) &&
              cell.row > started_new_page_at_row
             # Ink all cells on the current page
             if defined?(@before_rendering_page) && @before_rendering_page
@@ -398,6 +371,42 @@ module Prawn
       end
     end
 
+    def initial_row_on_initial_page
+      if @pdf.y > @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
+        # we're at the top of our bounds
+        return 0
+      else
+        # If there isn't enough room left on the page to fit the first data row
+        # (excluding the header), start the table on the next page.
+        needed_height = row(0).height
+        if @header
+          if @header.is_a? Integer
+            needed_height += row(1..@header).height
+          else
+            needed_height += row(1).height
+          end
+        end
+        if needed_height > @pdf.y - @pdf.reference_bounds.absolute_bottom
+          @pdf.bounds.move_past_bottom
+          # we are at the top of the new page
+          return 0
+        end
+        # we've got enough room to fit the first row
+        return -1
+      end
+    end
+
+    def header_rows
+      header_rows = Cells.new
+      if @header.is_a? Integer
+        @header.times do |r|
+          row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+        end
+      else
+        row(0).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+      end
+      header_rows
+    end
     # Calculate and return the constrained column widths, taking into account
     # each cell's min_width, max_width, and any user-specified constraints on
     # the table or column size.
