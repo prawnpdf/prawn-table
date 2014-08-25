@@ -137,7 +137,6 @@ module Prawn
       @pdf = document
       @cells = make_cells(data)
       @header = false
-      @epsilon = 1e-9
       options.each { |k, v| send("#{k}=", v) }
 
       if block
@@ -258,16 +257,9 @@ module Prawn
     #
     def draw
       with_position do
-        # The cell y-positions are based on an infinitely long canvas. The offset
-        # keeps track of how much we have to add to the original, theoretical
-        # y-position to get to the actual position on the current page.
-        offset = @pdf.y
-
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
         ref_bounds = @pdf.reference_bounds
-
-        last_y = @pdf.y
 
         # Determine whether we're at the top of the current bounds (margin box or
         # bounding box). If we're at the top, we couldn't gain any more room by
@@ -279,122 +271,46 @@ module Prawn
         # Note that we use the actual bounds, not the reference bounds. This is
         # because even if we are in a stretchy bounding box, flowing to the next
         # page will not buy us any space if we are at the top.
-        if @pdf.y > @pdf.bounds.height + @pdf.bounds.absolute_bottom - 0.001
-          # we're at the top of our bounds
-          started_new_page_at_row = 0
-        else
-          started_new_page_at_row = -1
+        #
+        # initial_row_on_initial_page may return 0 (already at the top OR created
+        # a new page) or -1 (enough space)
+        started_new_page_at_row = initial_row_on_initial_page
 
-          # If there isn't enough room left on the page to fit the first data row
-          # (excluding the header), start the table on the next page.
-          needed_height = row(0).height
-          if @header
-            if @header.is_a? Integer
-              needed_height += row(1..@header).height
-            else
-              needed_height += row(1).height
-            end
-          end
-          if needed_height > @pdf.y - ref_bounds.absolute_bottom
-            @pdf.bounds.move_past_bottom
-            offset = @pdf.y
-            started_new_page_at_row = 0
-          end
-        end
+        # The cell y-positions are based on an infinitely long canvas. The offset
+        # keeps track of how much we have to add to the original, theoretical
+        # y-position to get to the actual position on the current page.
+        offset = @pdf.y
 
         # Duplicate each cell of the header row into @header_row so it can be
         # modified in before_rendering_page callbacks.
-        if @header
-          @header_row = Cells.new
-          if @header.is_a? Integer
-            @header.times do |r|
-              row(r).each { |cell| @header_row[cell.row, cell.column] = cell.dup }
-            end
-          else
-            row(0).each { |cell| @header_row[cell.row, cell.column] = cell.dup }
-          end
-        end
+        @header_row = header_rows if @header
 
         # Track cells to be drawn on this page. They will all be drawn when this
         # page is finished.
         cells_this_page = []
 
         @cells.each do |cell|
-          # we only need to run this test on the first cell in a row
-          # check if the rows height fits on the page
-          # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
-          if cell.column == 0 &&
-             row(cell.row).height_with_span > (cell.y + offset) - ref_bounds.absolute_bottom &&
-             cell.row > started_new_page_at_row
-            # Ink all cells on the current page
-            if defined?(@before_rendering_page) && @before_rendering_page
-              c = Cells.new(cells_this_page.map { |ci, _| ci })
-              @before_rendering_page.call(c)
-            end
-            if @header_row.nil? || cells_this_page.size > @header_row.size
-              Cell.draw_cells(cells_this_page)
-            end
-            cells_this_page = []
+          if start_new_page?(cell, offset, ref_bounds) 
+            # draw cells on the current page and then start a new one
+            # this will also add a header to the new page if a header is set
+            # reset array of cells for the new page
+            cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
 
-            # start a new page or column
-            @pdf.bounds.move_past_bottom
-            x_offset = @pdf.bounds.left_side - @pdf.bounds.absolute_left
-            if cell.row > 0 && @header
-              if @header.is_a? Integer
-                header_height = 0
-                y_coord = @pdf.cursor
-                @header.times do |h|
-                  additional_header_height = add_header(cells_this_page, x_offset, y_coord-header_height, cell.row-1, h)
-                  header_height += additional_header_height
-                end
-              else
-                header_height = add_header(cells_this_page, x_offset, @pdf.cursor, cell.row-1)
-              end
-            else
-              header_height = 0
-            end
-            offset = @pdf.y - cell.y - header_height
+            # remember the current row for background coloring
             started_new_page_at_row = cell.row
           end
 
-          # Don't modify cell.x / cell.y here, as we want to reuse the original
-          # values when re-inking the table. #draw should be able to be called
-          # multiple times.
-          x, y = cell.x, cell.y
-          y += offset
-
-          # Translate coordinates to the bounds we are in, since drawing is
-          # relative to the cursor, not ref_bounds.
-          x += @pdf.bounds.left_side - @pdf.bounds.absolute_left
-          y -= @pdf.bounds.absolute_bottom
-
           # Set background color, if any.
-          if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
-            # Ensure coloring restarts on every page (to make sure the header
-            # and first row of a page are not colored the same way).
-            if @header.is_a? Integer
-              rows = @header
-            elsif @header
-              rows = 1
-            else
-              rows = 0
-            end
-            index = cell.row - [started_new_page_at_row, rows].max
+          cell = set_background_color(cell, started_new_page_at_row)
 
-            cell.background_color ||= @row_colors[index % @row_colors.length]
-          end
-
-          cells_this_page << [cell, [x, y]]
-          last_y = y
+          # add the current cell to the cells array for the current page
+          cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
         end
+
         # Draw the last page of cells
-        if defined?(@before_rendering_page) && @before_rendering_page
-          c = Cells.new(cells_this_page.map { |ci, _| ci })
-          @before_rendering_page.call(c)
-        end
-        Cell.draw_cells(cells_this_page)
+        ink_and_draw_cells(cells_this_page)
 
-        @pdf.move_cursor_to(last_y - @cells.last.height)
+        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
       end
     end
 
@@ -409,19 +325,19 @@ module Prawn
     #
     def column_widths
       @column_widths ||= begin
-        if width - cells.min_width < -epsilon
+        if width - cells.min_width < -Prawn::FLOAT_PRECISION
           raise Errors::CannotFit,
             "Table's width was set too small to contain its contents " +
             "(min width #{cells.min_width}, requested #{width})"
         end
 
-        if width - cells.max_width > epsilon
+        if width - cells.max_width > Prawn::FLOAT_PRECISION
           raise Errors::CannotFit,
             "Table's width was set larger than its contents' maximum width " +
             "(max width #{cells.max_width}, requested #{width})"
         end
 
-        if width - natural_width < -epsilon
+        if width - natural_width < -Prawn::FLOAT_PRECISION
           # Shrink the table to fit the requested width.
           f = (width - cells.min_width).to_f / (natural_width - cells.min_width)
 
@@ -429,7 +345,7 @@ module Prawn
             min, nat = column(c).min_width, natural_column_widths[c]
             (f * (nat - min)) + min
           end
-        elsif width - natural_width > epsilon
+        elsif width - natural_width > Prawn::FLOAT_PRECISION
           # Expand the table to fit the requested width.
           f = (width - cells.width).to_f / (cells.max_width - cells.width)
 
@@ -464,6 +380,120 @@ module Prawn
     end
 
     protected
+    
+    # sets the background color (if necessary) for the given cell
+    def set_background_color(cell, started_new_page_at_row)
+      if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
+        # Ensure coloring restarts on every page (to make sure the header
+        # and first row of a page are not colored the same way).
+        rows = number_of_header_rows
+
+        index = cell.row - [started_new_page_at_row, rows].max
+
+        cell.background_color ||= @row_colors[index % @row_colors.length]
+      end
+      cell
+    end
+
+    # number of rows of the header
+    # @return [Integer] the number of rows of the header
+    def number_of_header_rows
+      # header may be set to any integer value -> number of rows
+      if @header.is_a? Integer
+        return @header
+      # header may be set to true -> first row is repeated
+      elsif @header
+        return 1
+      end
+      # defaults to 0 header rows
+      0
+    end
+
+    # should we start a new page? (does the current row fail to fit on this page)
+    def start_new_page?(cell, offset, ref_bounds)
+      # we only need to run this test on the first cell in a row
+      # check if the rows height fails to fit on the page
+      # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
+      (cell.column == 0 && cell.row > 0 &&
+       !row(cell.row).fits_on_current_page?(offset, ref_bounds))
+    end
+
+    # ink cells and then draw them
+    def ink_and_draw_cells(cells_this_page, draw_cells = true)
+      ink_cells(cells_this_page)
+      Cell.draw_cells(cells_this_page) if draw_cells
+    end
+
+    # ink and draw cells, then start a new page
+    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
+      # don't draw only a header
+      draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
+      
+      ink_and_draw_cells(cells_this_page, draw_cells)
+      
+      # start a new page or column
+      @pdf.bounds.move_past_bottom
+
+      offset = (@pdf.y - cell.y)
+
+      cells_next_page = []
+
+      add_header(cell.row, cells_next_page)
+
+      # reset cells_this_page in calling function and return new offset
+      return cells_next_page, offset
+    end
+
+    # Ink all cells on the current page
+    def ink_cells(cells_this_page)
+      if defined?(@before_rendering_page) && @before_rendering_page
+        c = Cells.new(cells_this_page.map { |ci, _| ci })
+        @before_rendering_page.call(c)
+      end
+    end
+
+    # Determine whether we're at the top of the current bounds (margin box or
+    # bounding box). If we're at the top, we couldn't gain any more room by
+    # breaking to the next page -- this means, in particular, that if the
+    # first row is taller than the margin box, we will only move to the next
+    # page if we're below the top. Some floating-point tolerance is added to
+    # the calculation.
+    #
+    # Note that we use the actual bounds, not the reference bounds. This is
+    # because even if we are in a stretchy bounding box, flowing to the next
+    # page will not buy us any space if we are at the top.
+    # @return [Integer] 0 (already at the top OR created a new page) or -1 (enough space)
+    def initial_row_on_initial_page
+      # we're at the top of our bounds
+      return 0 if fits_on_page?(@pdf.bounds.height)
+
+      needed_height = row(0..number_of_header_rows).height
+
+      # have we got enough room to fit the first row (including header row(s))
+      return -1 if fits_on_page?(needed_height)
+
+      # If there isn't enough room left on the page to fit the first data row
+      # (including the header), start the table on the next page.
+      @pdf.bounds.move_past_bottom
+
+      # we are at the top of a new page
+      0
+    end
+
+    # do we have enough room to fit a given height on to the current page?
+    def fits_on_page?(needed_height)
+      needed_height < @pdf.y - (@pdf.bounds.absolute_bottom - Prawn::FLOAT_PRECISION)
+    end
+
+    # return the header rows
+    # @api private
+    def header_rows
+      header_rows = Cells.new
+      number_of_header_rows.times do |r|
+        row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+      end
+      header_rows
+    end
 
     # Converts the array of cellable objects given into instances of
     # Prawn::Table::Cell, and sets up their in-table properties so that they
@@ -528,6 +558,18 @@ module Prawn
       cells
     end
 
+    def add_header(row_number, cells_this_page)
+      x_offset = @pdf.bounds.left_side - @pdf.bounds.absolute_left
+      header_height = 0
+      if row_number > 0 && @header
+        y_coord = @pdf.cursor
+        number_of_header_rows.times do |h|
+          additional_header_height = add_one_header_row(cells_this_page, x_offset, y_coord-header_height, row_number-1, h)
+          header_height += additional_header_height
+        end        
+      end
+    end
+
     # Add the header row(s) to the given array of cells at the given y-position.
     # Number the row with the given +row+ index, so that the header appears (in
     # any Cells built for this page) immediately prior to the first data row on
@@ -535,7 +577,7 @@ module Prawn
     #
     # Return the height of the header.
     #
-    def add_header(page_of_cells, x_offset, y, row, row_of_header=nil)
+    def add_one_header_row(page_of_cells, x_offset, y, row, row_of_header=nil)
       rows_to_operate_on = @header_row
       rows_to_operate_on = @header_row.rows(row_of_header) if row_of_header
       rows_to_operate_on.each do |cell|
@@ -642,11 +684,6 @@ module Prawn
       @pdf.y = final_y
     end
 
-    private
-
-    def epsilon
-      @epsilon
-    end
   end
 end
 

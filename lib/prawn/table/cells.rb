@@ -37,6 +37,10 @@ module Prawn
     #
     class Cells < Array
 
+      def fits_on_current_page?(offset, ref_bounds)
+        height_with_span < (self[0,0].y + offset) - ref_bounds.absolute_bottom
+      end
+
       # @group Experimental API
 
       # Limits selection to the given row or rows. +row_spec+ can be anything
