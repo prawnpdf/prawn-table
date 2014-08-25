@@ -258,7 +258,6 @@ module Prawn
     # Draws the table onto the document at the document's current y-position.
     #
     def draw
-      puts 'hello' if @foobar
       with_position do
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
@@ -292,7 +291,7 @@ module Prawn
         # page is finished.
         cells_this_page = []
 
-        split_cells_old_page = []
+        split_cells = []
         split_cells_new_page = []
 
         row_to_split = -1
@@ -300,33 +299,34 @@ module Prawn
         original_height = 0
 
         @cells.each do |cell|
+
           max_available_height = (cell.y + offset) - ref_bounds.absolute_bottom
 
-          if defined?(@split_cells_in_final_row) && @split_cells_in_final_row
+          if defined?(@split_cells_in_final_row) && @split_cells_in_final_row && only_plain_text_cells(cell.row)
 
             if cell.column == 0 && splitting
               splitting = false
-              print_split_cells(split_cells_old_page, cells_this_page, offset)
-              split_cells_new_page = split_cells_old_page
-              split_cells_old_page = []
+              print_split_cells(split_cells, cells_this_page, offset)
+              split_cells_new_page = split_cells
+              split_cells = []
             end
 
             # should the row be split?
             if start_new_page?(cell, offset, ref_bounds) && max_available_height > 0
-              # FIXXME ensure that we only have text and no images or rotated text or anything like this
               row_to_split = cell.row
               original_height = cell.height
               splitting = true
             end
 
-            if row_to_split == cell.row
+            puts "row=#{row_to_split} content=#{cell.content}"
+            if row_to_split == cell.row && !cell.is_a?(Prawn::Table::Cell::SpanDummy)
               old_content = cell.content
               content_array = cell.content.split(' ')
               i = 0
               cell.content = content_array[0]
-              puts '####'
-              puts "splitting: #{old_content} #{cell.calculate_height_ignoring_span} <= #{max_available_height}?"
               height = cell.calculate_height_ignoring_span
+              puts '####'
+              puts "splitting: #{old_content} #{height} <= #{max_available_height}? (new_content=#{cell.content})"
               content_that_fits = ''
               while height <= max_available_height
                 # content from last round
@@ -340,30 +340,28 @@ module Prawn
                 height = cell.calculate_height_ignoring_span
                 puts "#{height} #{cell.content}"
               end
+              puts "content_that_fits=#{content_that_fits}"
               cell.content = content_that_fits
               cell.content_new_page = content_array[i..-1].join(' ')
               cell.recalculate_height_ignoring_span
             end
 
-            if cell.row > row_to_split
+            if row_to_split > -1 && cell.row > row_to_split #&& !cell.is_a?(Prawn::Table::Cell::SpanDummy)
+              puts "undo splitting #{cell.row} #{cell.column}"
               row_to_split = -1
             end
 
             cell_height = cell.natural_content_height + cell.padding_top + cell.padding_bottom
             
-            if (cell_height > max_available_height && cell.row > started_new_page_at_row)
-              puts 'foobar'
+            if cell_height > max_available_height && cell.row > started_new_page_at_row# && !cell.is_a?(Prawn::Table::Cell::SpanDummy)
+              
               # draw cells on the current page and then start a new one
               # this will also add a header to the new page if a header is set
               # reset array of cells for the new page
               cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
 
-              # change content
-              split_cells_new_page.each do |split_cell|
-                split_cell.content = split_cell.content_new_page
-                # split_cell.content = 'foo'
-              end
-              split_cell_height = print_split_cells(split_cells_new_page, cells_this_page, offset - original_height)
+              # draw split cells on to the new page
+              split_cell_height = print_split_cells(split_cells_new_page, cells_this_page, offset - original_height, new_page: true)
               offset -= split_cell_height
 
               # remember the current row for background coloring
@@ -385,7 +383,7 @@ module Prawn
 
           
           if splitting
-            split_cells_old_page.push cell
+            split_cells.push cell
           # add the current cell to the cells array for the current page
           else
             cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
@@ -393,8 +391,18 @@ module Prawn
 
         end
 
-        print_split_cells(split_cells_old_page, cells_this_page, offset)
+        print_split_cells(split_cells, cells_this_page, offset)
 
+
+        if splitting
+          puts 'splitting'
+          # draw cells on the current page and then start a new one
+          # this will also add a header to the new page if a header is set
+          # reset array of cells for the new page
+          cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, @cells.last)
+          # draw split cells on to the new page
+          split_cell_height = print_split_cells(split_cells, cells_this_page, offset, new_page: true)
+        end
         # Draw the last page of cells
         ink_and_draw_cells(cells_this_page)
 
@@ -402,14 +410,35 @@ module Prawn
       end
     end
 
-    def print_split_cells(split_cells_old_page, cells_this_page, offset)
+    # are all cells in this row normal text cells without any fancy formatting we can't easily handle when splitting cells
+    def only_plain_text_cells(row_number)
+      row(row_number).each do |cell|
+        return true if cell.is_a?(Prawn::Table::Cell::SpanDummy)
+        return false unless cell.is_a?(Prawn::Table::Cell::Text)
+        return false if cell.rotate
+        return false if cell.rotate_around
+        return false if cell.leading
+        return false if cell.single_line
+        return false if cell.valign
+        return false if cell.overflow
+      end
+      return true
+    end
+
+    def print_split_cells(split_cells, cells_this_page, offset, hash={})
+      if hash[:new_page]
+        # change content
+        split_cells.each do |split_cell|
+            split_cell.content = split_cell.content_new_page
+        end
+      end
       max_cell_height_old_page = 0
-      split_cells_old_page.each do |split_cell|
+      split_cells.each do |split_cell|
         cell_height = split_cell.calculate_height_ignoring_span
         max_cell_height_old_page = cell_height if max_cell_height_old_page < cell_height
       end
 
-      split_cells_old_page.each do |split_cell|
+      split_cells.each do |split_cell|
         split_cell.height = max_cell_height_old_page
         cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset)]]
       end
@@ -514,11 +543,6 @@ puts "max_cell_height - print_split_cells #{max_cell_height_old_page}"
 
     # should we start a new page? (does the current row fail to fit on this page)
     def start_new_page?(cell, offset, ref_bounds)
-      if cell.row > 44 && cell.column == 0
-        puts '####### splitting'
-        puts "offset=#{offset}"
-        puts "ref_bounds=#{ref_bounds}"
-      end
       # we only need to run this test on the first cell in a row
       # check if the rows height fails to fit on the page
       # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)

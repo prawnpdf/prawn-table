@@ -57,7 +57,7 @@ module Prawn
       attr_reader :padding
 
       attr_accessor :content_new_page
-      
+
       # If provided, the minimum width that this cell in its column will permit.
       #
       def min_width_ignoring_span
@@ -322,7 +322,7 @@ module Prawn
       end
 
       def calculate_height_ignoring_span
-        natural_content_height + padding_top + padding_bottom        
+        natural_content_height + padding_top + padding_bottom 
       end
 
       def recalculate_height_ignoring_span
@@ -334,11 +334,6 @@ module Prawn
       # group.
       #
       def height
-        # puts "calling height=#{height2} for text=#{content}"
-        height2
-      end
-
-      def height2
         return height_ignoring_span if @colspan == 1 && @rowspan == 1
 
         # We're in a span group; get the maximum height per row (including the
