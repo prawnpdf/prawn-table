@@ -56,6 +56,8 @@ module Prawn
       #
       attr_reader :padding
 
+      attr_accessor :content_new_page
+      
       # If provided, the minimum width that this cell in its column will permit.
       #
       def min_width_ignoring_span
@@ -110,7 +112,15 @@ module Prawn
 
       # Manually specify the cell's height.
       #
-      attr_writer :height
+      # attr_writer :height
+      def height
+        @height
+      end
+
+      def height=(val)
+        puts "setting height to #{val}" if val > 40
+        @height=val
+      end
 
       # Specifies which borders to enable. Must be an array of zero or more of:
       # <tt>[:left, :right, :top, :bottom]</tt>.
@@ -169,6 +179,7 @@ module Prawn
             return Cell::Image.new(pdf, at, content)
           end
           options.update(content)
+
           content = options[:content]
         else
           options[:content] = content
@@ -304,9 +315,18 @@ module Prawn
       # row only.
       #
       def height_ignoring_span
+        # puts "calling height_ignoring_span @height=#{@height}"
         # We can't ||= here because the FP error accumulates on the round-trip
         # from #content_height.
         defined?(@height) && @height || (content_height + padding_top + padding_bottom)
+      end
+
+      def calculate_height_ignoring_span
+        natural_content_height + padding_top + padding_bottom        
+      end
+
+      def recalculate_height_ignoring_span
+        @height = calculate_height_ignoring_span
       end
 
       # Returns the cell's height in points, inclusive of padding. If the cell
@@ -314,6 +334,11 @@ module Prawn
       # group.
       #
       def height
+        # puts "calling height=#{height2} for text=#{content}"
+        height2
+      end
+
+      def height2
         return height_ignoring_span if @colspan == 1 && @rowspan == 1
 
         # We're in a span group; get the maximum height per row (including the

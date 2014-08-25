@@ -170,6 +170,8 @@ module Prawn
     #
     attr_reader :cells
 
+    attr_accessor :split_cells_in_final_row
+
     # Specify a callback to be called before each page of cells is rendered.
     # The block is passed a Cells object containing all cells to be rendered on
     # that page. You can change styling of the cells in this block, but keep in
@@ -256,6 +258,7 @@ module Prawn
     # Draws the table onto the document at the document's current y-position.
     #
     def draw
+      puts 'hello' if @foobar
       with_position do
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
@@ -289,8 +292,84 @@ module Prawn
         # page is finished.
         cells_this_page = []
 
+        split_cells_old_page = []
+        split_cells_new_page = []
+
+        row_to_split = -1
+        splitting = false
+        original_height = 0
+
         @cells.each do |cell|
-          if start_new_page?(cell, offset, ref_bounds) 
+          max_available_height = (cell.y + offset) - ref_bounds.absolute_bottom
+
+          if defined?(@split_cells_in_final_row) && @split_cells_in_final_row
+
+            if cell.column == 0 && splitting
+              splitting = false
+              print_split_cells(split_cells_old_page, cells_this_page, offset)
+              split_cells_new_page = split_cells_old_page
+              split_cells_old_page = []
+            end
+
+            # should the row be split?
+            if start_new_page?(cell, offset, ref_bounds) && max_available_height > 0
+              # FIXXME ensure that we only have text and no images or rotated text or anything like this
+              row_to_split = cell.row
+              original_height = cell.height
+              splitting = true
+            end
+
+            if row_to_split == cell.row
+              old_content = cell.content
+              content_array = cell.content.split(' ')
+              i = 0
+              cell.content = content_array[0]
+              puts '####'
+              puts "splitting: #{old_content} #{cell.calculate_height_ignoring_span} <= #{max_available_height}?"
+              height = cell.calculate_height_ignoring_span
+              content_that_fits = ''
+              while height <= max_available_height
+                # content from last round
+                content_that_fits = cell.content
+                if content_array[i].nil?
+                  puts "break"
+                  break
+                end
+                i += 1
+                cell.content = content_array[0..i].join(' ')
+                height = cell.calculate_height_ignoring_span
+                puts "#{height} #{cell.content}"
+              end
+              cell.content = content_that_fits
+              cell.content_new_page = content_array[i..-1].join(' ')
+              cell.recalculate_height_ignoring_span
+            end
+
+            if cell.row > row_to_split
+              row_to_split = -1
+            end
+
+            cell_height = cell.natural_content_height + cell.padding_top + cell.padding_bottom
+            
+            if (cell_height > max_available_height && cell.row > started_new_page_at_row)
+              puts 'foobar'
+              # draw cells on the current page and then start a new one
+              # this will also add a header to the new page if a header is set
+              # reset array of cells for the new page
+              cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
+
+              # change content
+              split_cells_new_page.each do |split_cell|
+                split_cell.content = split_cell.content_new_page
+                # split_cell.content = 'foo'
+              end
+              split_cell_height = print_split_cells(split_cells_new_page, cells_this_page, offset - original_height)
+              offset -= split_cell_height
+
+              # remember the current row for background coloring
+              started_new_page_at_row = cell.row
+            end
+          elsif start_new_page?(cell, offset, ref_bounds) 
             # draw cells on the current page and then start a new one
             # this will also add a header to the new page if a header is set
             # reset array of cells for the new page
@@ -303,15 +382,39 @@ module Prawn
           # Set background color, if any.
           cell = set_background_color(cell, started_new_page_at_row)
 
+
+          
+          if splitting
+            split_cells_old_page.push cell
           # add the current cell to the cells array for the current page
-          cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
+          else
+            cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
+          end
+
         end
+
+        print_split_cells(split_cells_old_page, cells_this_page, offset)
 
         # Draw the last page of cells
         ink_and_draw_cells(cells_this_page)
 
         @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
       end
+    end
+
+    def print_split_cells(split_cells_old_page, cells_this_page, offset)
+      max_cell_height_old_page = 0
+      split_cells_old_page.each do |split_cell|
+        cell_height = split_cell.calculate_height_ignoring_span
+        max_cell_height_old_page = cell_height if max_cell_height_old_page < cell_height
+      end
+
+      split_cells_old_page.each do |split_cell|
+        split_cell.height = max_cell_height_old_page
+        cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset)]]
+      end
+puts "max_cell_height - print_split_cells #{max_cell_height_old_page}"
+      return max_cell_height_old_page
     end
 
     # Calculate and return the constrained column widths, taking into account
@@ -411,6 +514,11 @@ module Prawn
 
     # should we start a new page? (does the current row fail to fit on this page)
     def start_new_page?(cell, offset, ref_bounds)
+      if cell.row > 44 && cell.column == 0
+        puts '####### splitting'
+        puts "offset=#{offset}"
+        puts "ref_bounds=#{ref_bounds}"
+      end
       # we only need to run this test on the first cell in a row
       # check if the rows height fails to fit on the page
       # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
@@ -438,7 +546,9 @@ module Prawn
 
       cells_next_page = []
 
-      add_header(cell.row, cells_next_page)
+      header_height = add_header(cell.row, cells_next_page)
+
+      offset -= header_height
 
       # reset cells_this_page in calling function and return new offset
       return cells_next_page, offset
@@ -568,6 +678,7 @@ module Prawn
           header_height += additional_header_height
         end        
       end
+      header_height
     end
 
     # Add the header row(s) to the given array of cells at the given y-position.
