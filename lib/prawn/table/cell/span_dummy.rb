@@ -74,6 +74,11 @@ module Prawn
           @master_cell.background_color
         end
 
+        # is this a SpanDummy for a rowspan?
+        def row_dummy?
+          (row != @master_cell.row)
+        end
+
         private
 
         # Are we on the right border of the span?

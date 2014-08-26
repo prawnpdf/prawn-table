@@ -56,7 +56,11 @@ module Prawn
       #
       attr_reader :padding
 
-      attr_accessor :content_new_page
+      attr_writer :content_new_page
+
+      def content_new_page
+        @content_new_page || ''
+      end
 
       # If provided, the minimum width that this cell in its column will permit.
       #
@@ -118,7 +122,7 @@ module Prawn
       end
 
       def height=(val)
-        puts "setting height to #{val}" if val > 40
+        #puts "setting height to #{val}" if val > 40
         @height=val
       end
 
@@ -164,6 +168,13 @@ module Prawn
       # anything.
       #
       attr_reader :dummy_cells
+
+      def filtered_dummy_cells(row_number = false, new_page = false)
+        @dummy_cells unless row_number
+        @dummy_cells.map do |dummy_cell|
+          dummy_cell if (dummy_cell.row <= row_number && !new_page) || (dummy_cell.row > row_number && new_page)
+        end.compact.uniq
+      end
 
       # Instantiates a Cell based on the given options. The particular class of
       # cell returned depends on the :content argument. See the Prawn::Table
@@ -233,6 +244,16 @@ module Prawn
         options.each { |k, v| send("#{k}=", v) }
 
         @initializer_run = true
+      end
+
+      def reset_dummy_cells(new_page)
+        # @original_dummy_cells = @dummy_cells unless defined?(@original_dummy_cells)
+        # @dummy_cells = []
+        # @original_dummy_cells.each do |dummy_cell|
+        #   @dummy_cells.push dummy_cell if dummy_cell.row_dummy? || new_page
+        # end
+        # @dummy_cells = @original_dummy_cells
+        # puts "dummy_cells for #{row}/#{column} #{@dummy_cells.collect{|d| [d.row, d.column]}}"
       end
 
       # Supports setting multiple properties at once.
