@@ -116,15 +116,7 @@ module Prawn
 
       # Manually specify the cell's height.
       #
-      # attr_writer :height
-      def height
-        @height
-      end
-
-      def height=(val)
-        #puts "setting height to #{val}" if val > 40
-        @height=val
-      end
+      attr_accessor :height
 
       # Specifies which borders to enable. Must be an array of zero or more of:
       # <tt>[:left, :right, :top, :bottom]</tt>.
@@ -246,16 +238,6 @@ module Prawn
         @initializer_run = true
       end
 
-      def reset_dummy_cells(new_page)
-        # @original_dummy_cells = @dummy_cells unless defined?(@original_dummy_cells)
-        # @dummy_cells = []
-        # @original_dummy_cells.each do |dummy_cell|
-        #   @dummy_cells.push dummy_cell if dummy_cell.row_dummy? || new_page
-        # end
-        # @dummy_cells = @original_dummy_cells
-        # puts "dummy_cells for #{row}/#{column} #{@dummy_cells.collect{|d| [d.row, d.column]}}"
-      end
-
       # Supports setting multiple properties at once.
       #
       #   cell.style(:padding => 0, :border_width => 2)
@@ -336,7 +318,6 @@ module Prawn
       # row only.
       #
       def height_ignoring_span
-        # puts "calling height_ignoring_span @height=#{@height}"
         # We can't ||= here because the FP error accumulates on the round-trip
         # from #content_height.
         defined?(@height) && @height || (content_height + padding_top + padding_bottom)
