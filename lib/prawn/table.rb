@@ -438,7 +438,10 @@ module Prawn
 
       cells_next_page = []
 
-      add_header(cell.row, cells_next_page)
+      header_height = add_header(cell.row, cells_next_page)
+
+      # account for header height in newly generated offset
+      offset -= header_height
 
       # reset cells_this_page in calling function and return new offset
       return cells_next_page, offset
@@ -568,6 +571,7 @@ module Prawn
           header_height += additional_header_height
         end        
       end
+      header_height
     end
 
     # Add the header row(s) to the given array of cells at the given y-position.
