@@ -1577,6 +1577,15 @@ describe "colspan / rowspan" do
     t.cells[2, 3].content.should == "i"
   end
 
+  it 'creates page break with centered table' do
+    pdf = Prawn::Document.new
+
+    pdf.table [['one', 'two']], position: :center
+    pdf.table [['three', 'four']], position: :center
+    pdf.render
+    pdf.page_count.should == 1
+  end
+
   it 'illustrates issue #20', :unresolved, issue: 20 do
     pdf = Prawn::Document.new
     description = "one\ntwo\nthree"
