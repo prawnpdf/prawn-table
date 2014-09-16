@@ -1,6 +1,6 @@
 ## 0.1.2 (not released yet)
 
-...
+* fixed unnecessary page breaks with centered tables (#22, #23)
 
 ## 0.1.1
 
