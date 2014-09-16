@@ -1594,4 +1594,12 @@ describe "colspan / rowspan" do
     end
     pdf.render
   end
+
+  it 'illustrates issue #20 (2) and #22', issue: 22 do
+    pdf = Prawn::Document.new
+    pdf.table [['one', 'two']], position: :center
+    pdf.table [['three', 'four']], position: :center
+    pdf.render
+    pdf.page_count.should == 1
+  end
 end
