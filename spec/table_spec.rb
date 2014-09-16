@@ -1593,4 +1593,13 @@ describe "colspan / rowspan" do
     end
     pdf.render
   end
+
+  it 'creates page break with centered table' do
+    pdf = Prawn::Document.new
+
+    pdf.table [['one', 'two']], position: :center
+    pdf.table [['three', 'four']], position: :center
+    pdf.render
+    pdf.page_count.should == 1
+  end
 end
