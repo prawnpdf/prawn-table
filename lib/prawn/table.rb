@@ -693,6 +693,8 @@ module Prawn
 
       header_height = add_header(cell.row, cells_next_page)
       puts "adding header_height=#{header_height}"
+
+      # account for header height in newly generated offset
       offset -= header_height
 
       # reset cells_this_page in calling function and return new offset

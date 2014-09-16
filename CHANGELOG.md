@@ -1,4 +1,8 @@
-## 0.1.1 (Not Released Yet)
+## 0.1.2 (not released yet)
+
+...
+
+## 0.1.1
 
 * refactored table.rb to increase readability and lower overall code complexity (#15)
 * Fixed multi line table headers that involve cells that span multiple columns (#8)

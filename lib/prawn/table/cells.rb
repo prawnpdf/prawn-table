@@ -38,6 +38,9 @@ module Prawn
     class Cells < Array
 
       def fits_on_current_page?(offset, ref_bounds)
+        # an empty row array means it definitely fits
+        return true if self.empty?
+
         height_with_span < (self[0,0].y + offset) - ref_bounds.absolute_bottom
       end
 
