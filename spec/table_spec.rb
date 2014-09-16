@@ -1577,7 +1577,7 @@ describe "colspan / rowspan" do
     t.cells[2, 3].content.should == "i"
   end
 
-  it 'illustrates issue #20', :unresolved, issue: 20 do
+  it 'illustrates issue #20', issue: 20 do
     pdf = Prawn::Document.new
     description = "one\ntwo\nthree"
     bullets = description.split("\n")
@@ -1589,8 +1589,7 @@ describe "colspan / rowspan" do
       else
         rows << [ { content: bullet, width: 440, padding_top: 0, align: :justify } ]
       end
-
-      pdf.table(rows, header: true, width: 465, cell_style: { border_width: 0, inline_format: true })
+      pdf.table(rows, header: true, cell_style: { border_width: 0, inline_format: true })
     end
     pdf.render
   end
