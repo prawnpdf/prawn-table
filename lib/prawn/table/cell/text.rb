@@ -26,6 +26,9 @@ module Prawn
 
         attr_writer :font, :text_color
 
+        # used for splitting cells accross pages
+        attr_accessor :y_offset_new_page 
+        
         def initialize(pdf, point, options={})
           @text_options = {}
           super
