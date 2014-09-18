@@ -1,7 +1,8 @@
-## 0.1.2 (not released yet)
+## 0.1.2
 
-* fixed unnecessary page breaks with centered tables (#22, #23)
-
+* fixed unnecessary page breaks with centered tables (#22, #23, #24)
+* fixed undefined method `y' for nil:NilClass error (#20, #21, #25)
+* 
 ## 0.1.1
 
 * refactored table.rb to increase readability and lower overall code complexity (#15)
