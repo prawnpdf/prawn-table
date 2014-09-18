@@ -26,6 +26,9 @@ module Prawn
 
         attr_writer :font, :text_color
 
+        # used for splitting cells accross pages
+        attr_accessor :y_offset_new_page 
+        
         def initialize(pdf, point, options={})
           @text_options = {}
           super
@@ -55,6 +58,7 @@ module Prawn
         # preset width.
         #
         def natural_content_height
+          return 0 if content.nil?
           with_font do
             b = text_box(:width => spanned_content_width + FPTolerance)
             b.render(:dry_run => true)

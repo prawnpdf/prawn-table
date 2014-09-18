@@ -56,6 +56,12 @@ module Prawn
       #
       attr_reader :padding
 
+      attr_writer :content_new_page
+
+      def content_new_page
+        @content_new_page || ''
+      end
+
       # If provided, the minimum width that this cell in its column will permit.
       #
       def min_width_ignoring_span
@@ -110,7 +116,7 @@ module Prawn
 
       # Manually specify the cell's height.
       #
-      attr_writer :height
+      attr_accessor :height
 
       # Specifies which borders to enable. Must be an array of zero or more of:
       # <tt>[:left, :right, :top, :bottom]</tt>.
@@ -155,6 +161,13 @@ module Prawn
       #
       attr_reader :dummy_cells
 
+      def filtered_dummy_cells(row_number = false, new_page = false)
+        @dummy_cells unless row_number
+        @dummy_cells.map do |dummy_cell|
+          dummy_cell if (dummy_cell.row <= row_number && !new_page) || (dummy_cell.row > row_number && new_page)
+        end.compact.uniq
+      end
+
       # Instantiates a Cell based on the given options. The particular class of
       # cell returned depends on the :content argument. See the Prawn::Table
       # documentation under "Data" for allowable content types.
@@ -169,6 +182,7 @@ module Prawn
             return Cell::Image.new(pdf, at, content)
           end
           options.update(content)
+
           content = options[:content]
         else
           options[:content] = content
@@ -307,6 +321,14 @@ module Prawn
         # We can't ||= here because the FP error accumulates on the round-trip
         # from #content_height.
         defined?(@height) && @height || (content_height + padding_top + padding_bottom)
+      end
+
+      def calculate_height_ignoring_span
+        natural_content_height + padding_top + padding_bottom 
+      end
+
+      def recalculate_height_ignoring_span
+        @height = calculate_height_ignoring_span
       end
 
       # Returns the cell's height in points, inclusive of padding. If the cell

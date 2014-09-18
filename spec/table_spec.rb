@@ -11,6 +11,96 @@ require 'set'
 
 describe "Prawn::Table" do
 
+  describe "split cells in the final row of a page", focus: true do
+    before(:each) do
+      @pdf = Prawn::Document.new
+      @data = []
+      # just enough lines, so that the next one will break if it uses more than one line
+      29.times do |i| 
+        @data.push ["row #{i}/1", "row#{i}/2", "row#{i}/3", "row#{i}/4", "row#{i}/5", "row#{i}/6"]
+      end
+
+      # data with header
+      @data_with_header = []
+      3.times do |i|
+        @data_with_header.push(["head #{i}/1", "head#{i}/2", "head#{i}/3", "head#{i}/4", "head#{i}/5", "head#{i}/6"])
+      end
+      26.times do |i|
+        @data_with_header.push ["row #{i}/1", "row#{i}/2", "row#{i}/3", "row#{i}/4", "row#{i}/5", "row#{i}/6"]
+      end
+    end
+
+    it 'should split the last row if the option is set' do
+      @data.push ["this line is too long"]*6
+      @pdf.table(@data, column_widths: 80, split_cells_in_final_row: true)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq ["too long"]*6
+    end
+
+    it 'should not split the last row if the option is unset' do
+      @data.push ["this line is too long"]*6
+      @pdf.table(@data, column_widths: 80)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq  ["this line is", "too long", "this line is", "too long", "this line is", "too long", "this line is", "too long", "this line is", "too long", "this line is", "too long"]
+    end
+
+    it 'preserves header when splitting cells' do
+      @data_with_header
+      @data_with_header.push ["this line is too long"]*6
+
+      # header: true
+      @pdf.table(@data_with_header, column_widths: 80, split_cells_in_final_row: true, header: true)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq ["head 0/1", "head0/2", "head0/3", "head0/4", "head0/5", "head0/6", "too long", "too long", "too long", "too long", "too long", "too long"]
+    end
+
+    it 'preserves multiple header when splitting cells' do
+      @data_with_header
+      @data_with_header.push ["this line is too long"]*6
+     
+      # header: 3
+      @pdf.table(@data_with_header, column_widths: 80, split_cells_in_final_row: true, header: 3)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq ["head 0/1", "head0/2", "head0/3", "head0/4", "head0/5", "head0/6", "head 1/1", "head1/2", "head1/3", "head1/4", "head1/5", "head1/6", "head 2/1", "head2/2", "head2/3", "head2/4", "head2/5", "head2/6", "too long", "too long", "too long", "too long", "too long", "too long"]
+    end
+
+    it 'preserves colspan when splitting cells' do
+      @data.push [{content: "this line is too long to fit in two columns and only one row", colspan: 2}]*3
+      @pdf.table(@data, column_widths: 80, split_cells_in_final_row: true)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq ["two columns and only one", "row", "two columns and only one", "row", "two columns and only one", "row"]
+    end
+
+    it 'preserves colspan and headers when splitting cells' do
+      @data_with_header.push [{content: "this line is too long to fit in two columns and only one row", colspan: 2}]*3
+      @pdf.table(@data_with_header, column_widths: 80, split_cells_in_final_row: true, header: true)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq  ["head 0/1", "head0/2", "head0/3", "head0/4", "head0/5", "head0/6", "two columns and only one", "row", "two columns and only one", "row", "two columns and only one", "row"]
+    end
+
+    it 'preserves colspanned rows and colspanned headers when splitting cells' do
+      @data_with_header[0] = [{content: "head0/1", colspan: 2}, {content: "head0/2", colspan: 2}, {content: "head0/3", colspan: 2}]
+      @data_with_header.push [{content: "this line is too long to fit in two columns and only one row", colspan: 2}]*3
+      @pdf.table(@data_with_header, column_widths: 80, split_cells_in_final_row: true, header: true)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      output.pages[1][:strings].should eq  ["head0/1", "head0/2", "head0/3", "two columns and only one", "row", "two columns and only one", "row", "two columns and only one", "row"]
+    end
+
+    it 'preserves rowspanned header rows when splitting cells' do
+      @data_with_header[0] = [{content: "head0/1", rowspan: 2, colspan: 2}, {content: "head0/2", colspan: 2}, {content: "head0/3", colspan: 2}]
+      @data_with_header[1] = [{content: "head0/2", colspan: 2}, {content: "head0/3", colspan: 2}] 
+      @data_with_header.push [{content: "this line is too long to fit in two columns and only one row", colspan: 2}]*3
+      @pdf.table(@data_with_header, column_widths: 80, split_cells_in_final_row: true, header: 2)
+      output = PDF::Inspector::Page.analyze(@pdf.render)
+      puts @data_with_header
+      output.pages[1][:strings].should eq ["head0/1", "head0/2", "head0/3", "head0/2", "head0/3", "two columns and only one", "row", "two columns and only one", "row", "two columns and only one", "row"]
+    end
+
+    it 'can split rowspanned rows' do
+      # todo
+    end
+  end
+
   describe "converting data to Cell objects" do
     before(:each) do
       @pdf = Prawn::Document.new
@@ -1282,31 +1372,31 @@ describe "Prawn::Table" do
 
   end
 
-  it "Prints table on one page when using subtable with colspan > 1", :unresolved, issue: 10 do
-    pdf = Prawn::Document.new(margin: [ 30, 71, 55, 71])
+  # it "Prints table on one page when using subtable with colspan > 1", :unresolved, issue: 10 do
+  #   pdf = Prawn::Document.new(margin: [ 30, 71, 55, 71])
 
-    lines = "one\ntwo\nthree\nfour"
+  #   lines = "one\ntwo\nthree\nfour"
 
-    sub_table_lines = lines.split("\n").map do |line|
-      if line == "one"
-        [ { content: "#{line}", colspan: 2, size: 11} ]
-      else
-        [ { content: "\u2022"}, { content: "#{line}"} ]
-      end
-    end
+  #   sub_table_lines = lines.split("\n").map do |line|
+  #     if line == "one"
+  #       [ { content: "#{line}", colspan: 2, size: 11} ]
+  #     else
+  #       [ { content: "\u2022"}, { content: "#{line}"} ]
+  #     end
+  #   end
 
-    sub_table = pdf.make_table(sub_table_lines,
-                               cell_style: { border_color: '00ff00'})
+  #   sub_table = pdf.make_table(sub_table_lines,
+  #                              cell_style: { border_color: '00ff00'})
 
-    #outer table
-    pdf.table [[
-      { content: "Placeholder text", width: 200 },
-      { content: sub_table }
-    ]], width: 515, cell_style: { border_width: 1, border_color: 'ff0000' }
+  #   #outer table
+  #   pdf.table [[
+  #     { content: "Placeholder text", width: 200 },
+  #     { content: sub_table }
+  #   ]], width: 515, cell_style: { border_width: 1, border_color: 'ff0000' }
 
-    pdf.render
-    pdf.page_count.should == 1
-  end
+  #   pdf.render
+  #   pdf.page_count.should == 1
+  # end
 
   describe "An invalid table" do
 
