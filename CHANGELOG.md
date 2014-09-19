@@ -1,3 +1,5 @@
+## 0.1.3 (in development)
+
 ## 0.1.2
 
 * fixed unnecessary page breaks with centered tables (#22, #23, #24)
