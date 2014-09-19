@@ -26,23 +26,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency('prawn-manual_builder', ">= 0.2.0")
   spec.add_development_dependency('pdf-reader', '~>1.2')
 
-  spec.homepage = "http://prawn.majesticseacreature.com"
+  spec.homepage = "https://github.com/prawnpdf/prawn-table"
   spec.description = <<END_DESC
-  Prawn is a fast, tiny, and nimble PDF generator for Ruby
-END_DESC
-  spec.post_install_message = <<END_DESC
-
-  ********************************************
-
-
-  A lot has changed recently in Prawn.
-
-  Please read the changelog for details:
-
-  https://github.com/prawnpdf/prawn/wiki/CHANGELOG
-
-
-  ********************************************
-
+  Prawn::Table provides tables for the Prawn PDF toolkit
 END_DESC
 end
