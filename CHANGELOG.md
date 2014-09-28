@@ -1,4 +1,6 @@
-## 0.1.3 (in development)
+## 0.2.0
+
+* Allow the use of any Prawn `1.x` release from `1.3` onwards.
 
 ## 0.1.2
 
