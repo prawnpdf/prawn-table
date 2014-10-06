@@ -1,7 +1,5 @@
-$:.push File.expand_path("../lib", __FILE__)
-
-# Maintain your gem's version:
-require 'prawn/table/version'
+basedir = File.expand_path(File.dirname(__FILE__))
+require "#{basedir}/lib/prawn/table/version"
 
 Gem::Specification.new do |spec|
   spec.name = "prawn-table"
