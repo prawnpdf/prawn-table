@@ -56,7 +56,12 @@ module Prawn
       #
       attr_reader :padding
 
+      # content for the second cell of a cell that has been split (the one on the new page)
       attr_writer :content_new_page
+
+      # boolean
+      # true if second cell of a cell that has been split (the one on the new page)
+      attr_accessor :on_new_page
 
       def content_new_page
         @content_new_page || ''
@@ -328,14 +333,14 @@ module Prawn
         defined?(@height) && @height || (content_height + padding_top + padding_bottom)
       end
 
-      def calculate_height_ignoring_span
+      def calculate_height_ignoring_span(respect_original_height = true)
         # if a custom height was set, don't recalculate it
-        return original_height if original_height
+        # if respect_original_height is set
+        return original_height if original_height && respect_original_height
         natural_content_height + padding_top + padding_bottom 
       end
 
       def recalculate_height_ignoring_span
-        # puts "%%%% recalculating height for cell with content = #{content}"
         @height = calculate_height_ignoring_span
       end
 
