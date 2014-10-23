@@ -118,6 +118,8 @@ module Prawn
       #
       attr_accessor :height
 
+      attr_accessor :original_height
+
       # Specifies which borders to enable. Must be an array of zero or more of:
       # <tt>[:left, :right, :top, :bottom]</tt>.
       #
@@ -234,6 +236,9 @@ module Prawn
         @dummy_cells = []
 
         options.each { |k, v| send("#{k}=", v) }
+        
+        # save the height so we can get back to it later
+        @original_height = options[:height]
 
         @initializer_run = true
       end
@@ -324,10 +329,13 @@ module Prawn
       end
 
       def calculate_height_ignoring_span
+        # if a custom height was set, don't recalculate it
+        return original_height if original_height
         natural_content_height + padding_top + padding_bottom 
       end
 
       def recalculate_height_ignoring_span
+        # puts "%%%% recalculating height for cell with content = #{content}"
         @height = calculate_height_ignoring_span
       end
 
