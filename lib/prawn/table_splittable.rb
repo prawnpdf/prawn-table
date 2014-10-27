@@ -344,7 +344,6 @@ module Prawn
 
         # if we are on the new page, change the content of the cell
         split_cell.content = split_cell.content_new_page if hash[:new_page]
-        split_cell.on_new_page = true if hash[:new_page]
 
         new_page_string = 'new page' if hash[:new_page]
         # puts "@@@@@ split_cell(1) #{split_cell.row}/#{split_cell.column} - height: #{split_cell.height} - #{split_cell.content} - #{split_cell.content_new_page} #{new_page_string}" 

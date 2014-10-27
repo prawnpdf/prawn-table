@@ -59,10 +59,6 @@ module Prawn
       # content for the second cell of a cell that has been split (the one on the new page)
       attr_writer :content_new_page
 
-      # boolean
-      # true if second cell of a cell that has been split (the one on the new page)
-      attr_accessor :on_new_page
-
       def content_new_page
         @content_new_page || ''
       end
@@ -189,7 +185,6 @@ module Prawn
             return Cell::Image.new(pdf, at, content)
           end
           options.update(content)
-
           content = options[:content]
         else
           options[:content] = content
