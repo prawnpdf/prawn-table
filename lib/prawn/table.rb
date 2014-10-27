@@ -108,7 +108,7 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def table(data, options={}, &block)
-        t = TableSplittable.new(data, self, options, &block)
+        t = make_table(data, options, &block)
         t.draw
         t
       end
@@ -119,7 +119,11 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def make_table(data, options={}, &block)
-        TableSplittable.new(data, self, options, &block)
+        if options[:split_cells_in_final_row]
+          TableSplittable.new(data, self, options, &block)
+        else
+          Table.new(data, self, options, &block)
+        end
       end
     end
 
@@ -170,8 +174,6 @@ module Prawn
     # this table.
     #
     attr_reader :cells
-
-    attr_accessor :split_cells_in_final_row
 
     # Specify a callback to be called before each page of cells is rendered.
     # The block is passed a Cells object containing all cells to be rendered on
