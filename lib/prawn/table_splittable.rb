@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 module Prawn
   class TableSplittable < Table
 
@@ -174,50 +176,18 @@ module Prawn
       # we don't process SpanDummy cells
       return cell if cell.is_a?(Prawn::Table::Cell::SpanDummy)
 
+      return cell unless row_to_split == cell.row
+
       # the main work
-      if row_to_split == cell.row
-
-        old_content = cell.content
-        content_array = cell.content.split(' ')
-        i = 0
-        cell.content = content_array[0]
-
-        content_that_fits = ''
-        while cell.recalculate_height_ignoring_span <= max_available_height
-          # content from last round
-          content_that_fits = cell.content
-          break if content_array[i].nil?
-          i += 1
-          cell.content = content_array[0..i].join(' ')
-        end
-        
-        # did anything fit at all?
-        if content_that_fits && content_that_fits.length > 0
-          cell.content = content_that_fits
-          cell.content_new_page = (cell.content_new_page  || '' ) + content_array[i..-1].join(' ')
-        else
-          cell.content = old_content
-        end
-        
-        # recalcualte height for the cell in question
-        cell.recalculate_height_ignoring_span
-
-        # if a height was set for this cell, use it if the text didn't have to be split
-        # cell.height = cell.original_height if cell.content == old_content && !cell.original_height.nil?
-        # and its dummy cells
-        cell.dummy_cells.each do |dummy_cell|
-          dummy_cell.recalculate_height_ignoring_span
-        end
-
-      end
-      cell
+      split_cell = Prawn::Table::SplitCell.new(cell).split(max_available_height)
+      return split_cell.cell
     end
 
     # are all cells in this row normal text cells without any fancy formatting we can't easily handle when splitting cells
     def only_plain_text_cells(row_number)
       row(row_number).each do |cell|
         return true if cell.is_a?(Prawn::Table::Cell::SpanDummy)
-        
+
         if !cell.is_a?(Prawn::Table::Cell::Text) ||
            cell.rotate ||
            cell.rotate_around ||

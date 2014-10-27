@@ -16,6 +16,7 @@ require_relative 'table/cell/subtable'
 require_relative 'table/cell/image'
 require_relative 'table/cell/span_dummy'
 require_relative 'table_splittable'
+require_relative 'table/splittable/split_cell'
 
 module Prawn
   module Errors
@@ -428,11 +429,11 @@ module Prawn
       ink_cells(cells_this_page)
       Cell.draw_cells(cells_this_page) if draw_cells
     end
-    
+
     # ink and draw cells, then start a new page
     # split_cells and offset are only used in TableSplittable, used here to allow for function overload
     def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells=false, offset=false)
-      
+
       # don't draw only a header
       draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
             
