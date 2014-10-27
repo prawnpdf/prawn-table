@@ -430,16 +430,14 @@ module Prawn
     end
 
     # ink and draw cells, then start a new page
+    # split_cells and offset are only used in TableSplittable, used here to allow for function overload
     def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells=false, offset=false)
+
       # don't draw only a header
       draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
-      
-      # print any remaining cells to be split
-      print_split_cells(split_cells, cells_this_page, offset) if offset
-      
+            
       ink_and_draw_cells(cells_this_page, draw_cells)
 
-      # puts '###### starting a new page (1)'
       # start a new page or column
       @pdf.bounds.move_past_bottom
 
@@ -621,8 +619,8 @@ module Prawn
     def assert_proper_table_data(data)
       if data.nil? || data.empty?
         raise Prawn::Errors::EmptyTable,
-        "data must be a non-empty, non-nil, two dimensional array " +
-        "of cell-convertible objects"
+          "data must be a non-empty, non-nil, two dimensional array " +
+          "of cell-convertible objects"
       end
 
       unless data.all? { |e| Array === e }

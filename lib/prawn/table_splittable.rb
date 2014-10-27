@@ -458,7 +458,13 @@ module Prawn
       return (max_cell_height.values.max || 0) - (compensate_offset_for_height || 0)
     end
 
+    # ink and draw cells, then start a new page
+    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells=false, offset=false)
+      # print any remaining cells to be split
+      print_split_cells(split_cells, cells_this_page, offset) if offset
 
+      super
+    end
 
   end
 end
