@@ -15,6 +15,7 @@ require_relative 'table/cell/text'
 require_relative 'table/cell/subtable'
 require_relative 'table/cell/image'
 require_relative 'table/cell/span_dummy'
+require_relative 'table_splittable'
 
 module Prawn
   module Errors
@@ -107,7 +108,7 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def table(data, options={}, &block)
-        t = Table.new(data, self, options, &block)
+        t = TableSplittable.new(data, self, options, &block)
         t.draw
         t
       end
@@ -118,7 +119,7 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def make_table(data, options={}, &block)
-        Table.new(data, self, options, &block)
+        TableSplittable.new(data, self, options, &block)
       end
     end
 
