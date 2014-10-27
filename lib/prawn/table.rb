@@ -342,19 +342,22 @@ module Prawn
               recalculated_split_cells = []
               first_row = split_cells.first.row
               last_row = split_cells.last.row
+              # O(n^2) on the cells about to be split
+              # maybe we can improve this at some point in the future
               split_cells.each do |split_cell|
                 old_height = split_cell.height
+                old_y = split_cell.y
                 split_cell.height = 0
                 max_available_height = rows(first_row..last_row).height
 
-                
                 split_cell_content(split_cell, split_cell.row, max_available_height)
-
                 
                 split_cell.y_offset_new_page = (old_height - split_cell.height) if !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-
-                # puts "cell #{split_cell.row}/#{split_cell.column} - old_height=#{old_height} split_cell.height=#{split_cell.height} y_offset_new_page = #{split_cell.y_offset_new_page}" if split_cell.row == 8 && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-                # puts "#{split_cell.content} - #{split_cell.content_new_page}" 
+                if !split_cell.is_a?(Prawn::Table::Cell::SpanDummy) && split_cell.y_offset_new_page > 0
+                  # split_cell.y_offset_new_page = 0
+                  # puts "cell #{split_cell.row}/#{split_cell.column} - old_height=#{old_height} split_cell.height=#{split_cell.height} y_offset_new_page = #{split_cell.y_offset_new_page}" if !split_cell.is_a?(Prawn::Table::Cell::SpanDummy) && split_cell.y_offset_new_page != 0
+                  # puts "cell #{split_cell.row}/#{split_cell.column} - y:#{split_cell.y} - old_y:#{old_y}" if split_cell.y != old_y
+                end
               end
               # puts "##### @@@@@ (1)"
               # draw cells on the current page and then start a new one
@@ -434,9 +437,9 @@ module Prawn
           next if skip_header_rows[cell.row]
           old_height = cell.height
           cell.height = row(cell.row).height
-          puts "$$$ old_height=#{old_height} new_height=#{cell.height}" if cell.row == 8
+          # puts "$$$ old_height=#{old_height} new_height=#{cell.height} content=#{cell.content}" if cell.height != old_height
         end
-      puts "$$$ foobar"
+      
         # Draw the last page of cells
         ink_and_draw_cells(cells_this_page)
 
@@ -476,7 +479,7 @@ module Prawn
         end
         
         # recalcualte height for the cell in question
-        cell.recalculate_height_ignoring_span 
+        cell.recalculate_height_ignoring_span
         # if a height was set for this cell, use it if the text didn't have to be split
         # cell.height = cell.original_height if cell.content == old_content && !cell.original_height.nil?
         # and its dummy cells
@@ -572,6 +575,16 @@ module Prawn
     end
 
     def print_split_cells(split_cells, cells_this_page, offset, hash={})
+      puts "########"
+      if hash[:new_page]
+        puts "page 2"
+      else
+        puts "page 1" 
+      end
+      puts "########"
+      split_cells.each do |cell|
+        puts "#{cell.row}/#{cell.column}"
+      end
       # puts "@@@@ !!!!! print_split_cells #{split_cells.first.row unless split_cells.empty? }-#{split_cells.last.row unless split_cells.empty?}"
       compensate_offset_for_height = 0
       extra_height_for_row_dummies = 0
@@ -656,20 +669,22 @@ module Prawn
            !split_cell.is_a?(Prawn::Table::Cell::SpanDummy) &&
            !split_cell.dummy_cells.empty? && 
            split_cell.row < split_cells.last.row
-           puts "&&&&&& special case #{split_cell.row}/#{split_cell.column} content:#{split_cell.content}"
+           # puts "&&&&&& special case #{split_cell.row}/#{split_cell.column} content:#{split_cell.content}"
            # puts "&&&&&& rows #{(split_cell.row+1)} to #{split_cells.last.row}"
 
           # add it to the cells_this_page array and adjust the position accordingly
           # we need to take into account any rows that have already been printed
           height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
           
-          puts "split_cell.row+1=#{split_cell.row+1} split_cells.last.row=#{split_cells.last.row}"
-          puts "row(27).height=#{row(27).height}"
-          puts "row(28).height=#{row(28).height}"
-          puts "row(29).height=#{row(29).height}"
-          puts "&&&&&& height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows}"
-          foo= split_cell.y_offset_new_page
-          puts "foo #{split_cell.row}/#{split_cell.column}=#{foo}"
+          # puts "split_cell.row+1=#{split_cell.row+1} split_cells.last.row=#{split_cells.last.row}"
+          # puts "row(27).height=#{row(27).height}"
+          # puts "row(28).height=#{row(28).height}"
+          # puts "row(29).height=#{row(29).height}"
+          # puts "&&&&&& height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows}"
+          # foo= split_cell.y_offset_new_page
+          foo = 0
+          # puts "foo #{split_cell.row}/#{split_cell.column}=#{foo}"
+          # puts "##### #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} height=#{split_cell.height} check_sum=#{split_cell.height - height_of_additional_already_printed_rows}"
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows + foo)]]
 
           # move the rest of the row of the canvas

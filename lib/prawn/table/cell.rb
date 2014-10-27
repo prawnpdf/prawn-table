@@ -340,8 +340,8 @@ module Prawn
         natural_content_height + padding_top + padding_bottom 
       end
 
-      def recalculate_height_ignoring_span
-        @height = calculate_height_ignoring_span
+      def recalculate_height_ignoring_span(respect_original_height = true)
+        @height = calculate_height_ignoring_span(respect_original_height)
       end
 
       # Returns the cell's height in points, inclusive of padding. If the cell
