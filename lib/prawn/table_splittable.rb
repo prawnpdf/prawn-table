@@ -80,7 +80,10 @@ module Prawn
             end
 
             cell_height = cell.calculate_height_ignoring_span
-            if cell_height > max_available_height && cell.row > started_new_page_at_row && !cell.is_a?(Prawn::Table::Cell::SpanDummy)
+            if cell_height > max_available_height && 
+              cell.row > started_new_page_at_row && 
+              !split_cells.empty? &&
+              !cell.is_a?(Prawn::Table::Cell::SpanDummy)
               # recalculate / resplit content for split_cells array
               # this may be necessary because a cell that spans multiple rows did not
               # know anything about needed height changes in subsequent rows when the text was split
@@ -88,7 +91,6 @@ module Prawn
               # a splitting of a later row resulted in a table that was smaller than the theoretical
               # maximum that was used in the original calculation (for example due to the padding)
               # thus the last line can't be printed because there is only space for n lines
-              
               recalculated_split_cells = []
               first_row = split_cells.first.row
               last_row = split_cells.last.row
