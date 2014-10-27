@@ -425,17 +425,6 @@ module Prawn
 
     # ink cells and then draw them
     def ink_and_draw_cells(cells_this_page, draw_cells = true)
-      #debug output only
-      new_cells_this_page = Array.new
-      cells_this_page.each do |cell_array|
-        cell=cell_array[0]
-        # puts "cell #{cell.row}/#{cell.column} - height: #{cell.height} - #{cell.content}"
-        # cell_array[0].content = cell.height.to_s unless cell.content.nil? or cell.content.length < 1
-        new_cells_this_page.push cell_array
-      end
-      cells_this_page = new_cells_this_page
-      # end debug output
-
       ink_cells(cells_this_page)
       Cell.draw_cells(cells_this_page) if draw_cells
     end
@@ -459,7 +448,6 @@ module Prawn
       cells_next_page = []
 
       header_height = add_header(cell.row, cells_next_page)
-      # puts "adding header_height=#{header_height}"
 
       # account for header height in newly generated offset
       offset -= header_height
@@ -631,10 +619,10 @@ module Prawn
     # table.
     #
     def assert_proper_table_data(data)
-        if data.nil? || data.empty?
-          raise Prawn::Errors::EmptyTable,
-          "data must be a non-empty, non-nil, two dimensional array " +
-          "of cell-convertible objects"
+      if data.nil? || data.empty?
+        raise Prawn::Errors::EmptyTable,
+        "data must be a non-empty, non-nil, two dimensional array " +
+        "of cell-convertible objects"
       end
 
       unless data.all? { |e| Array === e }
