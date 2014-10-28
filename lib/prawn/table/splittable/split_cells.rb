@@ -9,11 +9,53 @@ module Prawn
       def initialize(cells, options = {})
         @cells = cells
         @current_row_number = options[:current_row_number]
+        @new_page = options[:new_page]
+        @table = options[:table]
       end
+
+      # allow this class to access the rows of the table
+      def rows(row_spec)
+        table.rows(row_spec)
+      end
+      alias_method :row, :rows
 
       attr_accessor :cells
 
-      def cells_new_page
+      # the table associated with this instance
+      attr_reader :table
+
+      # change content to the one needed for the new page
+      def adjust_content_for_new_page
+        cells.each do |cell|
+          cell.content = cell.content_new_page
+        end
+      end
+
+      # calculate the maximum height of each row
+      def max_cell_heights
+        max_cell_height = Hash.new(0)
+        cells.each do |cell|
+
+          # if we are on the new page, change the content of the cell
+          # cell.content = cell.content_new_page if hash[:new_page]
+
+          # calculate the height of the cell includign any cells it may span
+          respect_original_height = true unless @new_page
+          cell_height = cell.calculate_height_ignoring_span(respect_original_height)
+
+          # account for the height of any rows this cell spans (new page)
+          rows = cell.dummy_cells.map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+          rows.each do |row_number|
+            cell_height -= row(row_number).height
+          end
+
+          max_cell_height[cell.row] = cell_height if max_cell_height[cell.row] < cell_height unless cell.content.nil? || cell.content.empty? 
+        end
+        max_cell_height
+      end
+
+      # remove any cells from the cells array that are not needed on the new page
+      def calculate_cells_new_page
         # is there some content to display coming from the last row on the last page?
         # found_some_content_in_the_last_row_on_the_last_page = false
         # cells.each do |split_cell|

@@ -28,7 +28,6 @@ module Prawn
 
           # should the row be split?
           if start_new_page?(cell, offset, ref_bounds, true) && max_available_height > 0
-            # puts "@@@@ split cell #{cell.row}/#{cell.column} - #{cell.content}"
             row_to_split = cell.row
             original_height = cell.height
             splitting = true
@@ -77,7 +76,7 @@ module Prawn
             # any remaining cells to be split will have been split by the ink_and_draw_cells_and_start_new_page command
             # calculate which cells should be shown on the new page
             # -> which shows wheren't fully rendered on the last one
-            split_cells_new_page = Prawn::Table::SplitCells.new(split_cells, current_row_number: cell.row).cells_new_page
+            split_cells_new_page = Prawn::Table::SplitCells.new(split_cells, current_row_number: cell.row).calculate_cells_new_page
             split_cells = []
             splitting=false
             
@@ -118,10 +117,9 @@ module Prawn
         # draw cells on the current page and then start a new one
         # this will also add a header to the new page if a header is set
         # reset array of cells for the new page
-        # puts "##### @@@@@ (3)"
         cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, @cells.last)
         # draw split cells on to the new page
-        split_cell_height = print_split_cells(split_cells, cells_this_page, offset, new_page: true, current_row: @cells.last.row)
+        print_split_cells(split_cells, cells_this_page, offset, new_page: true, current_row: @cells.last.row)
       end
 
       # ensure that each cell in each row is of equal height
@@ -139,7 +137,7 @@ module Prawn
 
       return cells_this_page, offset
     end
-    
+
     # split the content of the cell
     def split_cell_content(cell, row_to_split, max_available_height)
       # we don't process SpanDummy cells
@@ -172,26 +170,12 @@ module Prawn
       compensate_offset_for_height = 0
       extra_height_for_row_dummies = 0
 
-      max_cell_height = Hash.new(0)
-      split_cells.each do |split_cell|
-
-        # if we are on the new page, change the content of the cell
-        split_cell.content = split_cell.content_new_page if hash[:new_page]
-
-        # calculate the height of the cell includign any cells it may span
-        respect_original_height = true unless hash[:new_page]
-        cell_height = split_cell.calculate_height_ignoring_span(respect_original_height)
-
-        cell_height = split_cell.original_height if !split_cell.original_height.nil?
-
-        # account for the height of any rows this cell spans (new page)
-        rows = split_cell.dummy_cells.map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-        rows.each do |row_number|
-          cell_height -= row(row_number).height
-        end
-
-        max_cell_height[split_cell.row] = cell_height if max_cell_height[split_cell.row] < cell_height unless split_cell.content.nil? || split_cell.content.empty? 
-      end
+      cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
+      cells_object.adjust_content_for_new_page if hash[:new_page]
+      
+      split_cells = cells_object.cells
+      
+      max_cell_height = cells_object.max_cell_heights
 
       split_cells.each do |split_cell|
         unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
