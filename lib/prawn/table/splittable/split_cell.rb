@@ -1,6 +1,10 @@
 # encoding: utf-8
+
 module Prawn
   class Table
+
+    # This class can do one thing well: split the content of a cell
+    # while doing this it also adjust the height of the cell to something reasonable
     class SplitCell
 
     def initialize(cell)
@@ -11,6 +15,7 @@ module Prawn
 
     attr_accessor :cell
 
+    # split the content of the cell and adjust the height
     def split(max_available_height)
       # prepare everything for the while loop
       # first we're gonna check if a single word fits the available space
@@ -36,6 +41,7 @@ module Prawn
 
     private
 
+    # recalculates the height of the cell and dummy cells if specified
     def recalculate_height(options = {})
       new_height = cell.recalculate_height_ignoring_span
 
@@ -51,6 +57,7 @@ module Prawn
       return new_height
     end
 
+    # splits the content
     def split_content(content_that_fits, i)
       # did anything fit at all?
       if content_that_fits && content_that_fits.length > 0

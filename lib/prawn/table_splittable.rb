@@ -1,5 +1,8 @@
 # encoding: utf-8
 
+require_relative 'table/splittable/split_cell'
+require_relative 'table/splittable/split_cells'
+
 module Prawn
   class TableSplittable < Table
 
@@ -103,7 +106,9 @@ module Prawn
               cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells, offset)
 
               # any remaining cells to be split will have been split by the ink_and_draw_cells_and_start_new_page command
-              split_cells_new_page = calculate_split_cells_new_page(split_cells, cell.row)
+              # calculate which cells should be shown on the new page
+              # -> which shows wheren't fully rendered on the last one
+              split_cells_new_page = Prawn::Table::SplitCells.new(split_cells, current_row_number: cell.row).cells_new_page
               split_cells = []
               splitting=false
               
@@ -197,43 +202,6 @@ module Prawn
         end
       end
       return true
-    end
-
-    # calculate which cells should be shown on the new page
-    # -> which shows wheren't fully rendered on the last one
-    def calculate_split_cells_new_page(split_cells, row_number)
-      last_row_number_last_page = row_number - 1
-      
-      # is there some content to display coming from the last row on the last page?
-      found_some_content_in_the_last_row_on_the_last_page = false
-      split_cells.each do |split_cell|
-        next unless split_cell.row == last_row_number_last_page
-        found_some_content_in_the_last_row_on_the_last_page = true unless split_cell.content_new_page.nil? || split_cell.content_new_page.empty?
-      end
-
-      split_cells_new_page = []
-      split_cells.each do |split_cell|
-        # don't print cells that don't span anything and that 
-        # aren't located in the last row
-        next if split_cell.row < last_row_number_last_page &&
-                split_cell.dummy_cells.empty? && 
-                !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-        
-        # if they do span multiple cells, check if at least one of them
-        # is located in the last row of the last page
-        if !split_cell.dummy_cells.empty?
-          found_a_cell_in_the_last_row_on_the_last_page = false
-          split_cell.dummy_cells.each do |dummy_cell|
-            found_a_cell_in_the_last_row_on_the_last_page = true if dummy_cell.row == last_row_number_last_page
-          end
-          next unless found_a_cell_in_the_last_row_on_the_last_page
-        end
-
-        # all tests passed. print it - add it to the array
-        split_cells_new_page.push split_cell
-      end
-
-      split_cells_new_page
     end
 
     def print_split_cells(split_cells, cells_this_page, offset, hash={})
