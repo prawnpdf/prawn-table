@@ -291,7 +291,21 @@ module Prawn
         # modified in before_rendering_page callbacks.
         @header_row = header_rows if @header
 
-        # Track cells to be drawn on this page. They will all be drawn when this
+        cells_this_page, offset = process_cells(ref_bounds, started_new_page_at_row, offset)
+
+        # Draw the last page of cells
+        ink_and_draw_cells(cells_this_page)
+
+        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
+      end
+    end
+
+    # process cells into cells_this_page array
+    # this function is overwritten in TableSplittable
+    # if you change any code here be sure to check if that function
+    # needs to be adapted too
+    def process_cells(ref_bounds, started_new_page_at_row, offset)
+      # Track cells to be drawn on this page. They will all be drawn when this
         # page is finished.
         cells_this_page = []
 
@@ -313,11 +327,7 @@ module Prawn
           cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
         end
 
-        # Draw the last page of cells
-        ink_and_draw_cells(cells_this_page)
-
-        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
-      end
+        return cells_this_page, offset
     end
 
     # Calculate and return the constrained column widths, taking into account
