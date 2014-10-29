@@ -437,6 +437,16 @@ module Prawn
     # ink cells and then draw them
     def ink_and_draw_cells(cells_this_page, draw_cells = true)
       ink_cells(cells_this_page)
+
+      # debug
+      cells_this_page.each do |cell, stuff|
+        puts "@@@ cell #{cell.row}/#{cell.column} heigh=#{cell.height} (t 443)"
+        # if cell.row == 9 and cell.column == 1
+        #   cell.height = 300
+        # end
+      end
+      # end debug
+
       Cell.draw_cells(cells_this_page) if draw_cells
     end
 

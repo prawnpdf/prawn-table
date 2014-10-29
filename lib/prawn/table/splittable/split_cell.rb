@@ -44,6 +44,7 @@ module Prawn
     # recalculates the height of the cell and dummy cells if specified
     def recalculate_height(options = {})
       new_height = cell.recalculate_height_ignoring_span
+      puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (sc 47)"
 
       if options[:include_dummy_cells] == true
         # if a height was set for this cell, use it if the text didn't have to be split
@@ -51,6 +52,7 @@ module Prawn
         # and its dummy cells
         cell.dummy_cells.each do |dummy_cell|
           dummy_cell.recalculate_height_ignoring_span
+          puts "@@@ cell #{cell.row}/#{cell.column} dummy_cell: cell #{dummy_cell.row}/#{dummy_cell.column} height=#{dummy_cell.height} (dummy cell / sc 55)"
         end      
       end
 

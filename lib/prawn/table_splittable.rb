@@ -23,7 +23,9 @@ module Prawn
       original_height = 0
 
       @cells.each do |cell|
+        puts "@@@ cell #{cell.row}/#{cell.column} content=#{cell.content}"
         if defined?(@split_cells_in_final_row) && @split_cells_in_final_row && only_plain_text_cells(cell.row)
+          
           max_available_height = (cell.y + offset) - ref_bounds.absolute_bottom
 
           # should the row be split?
@@ -62,12 +64,14 @@ module Prawn
               old_height = split_cell.height
               old_y = split_cell.y
               split_cell.height = 0
+              puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 66)"
               max_available_height = rows(first_row..last_row).height
 
               split_cell_content(split_cell, split_cell.row, max_available_height)
-              
+              puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 70)"
               split_cell.y_offset_new_page = (old_height - split_cell.height) if !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
             end
+
             # draw cells on the current page and then start a new one
             # this will also add a header to the new page if a header is set
             # reset array of cells for the new page
@@ -83,6 +87,7 @@ module Prawn
             # draw split cells on to the new page
             split_cell_height = print_split_cells(split_cells_new_page, cells_this_page, offset - original_height, new_page: true, current_row: cell.row)
             offset -= split_cell_height
+            puts "@@@ cell #{cell.row}/#{cell.column} reducing offset by #{split_cell_height} (ts 89)"
 
             # remember the current row for background coloring
             started_new_page_at_row = cell.row
@@ -99,8 +104,6 @@ module Prawn
 
         # Set background color, if any.
         cell = set_background_color(cell, started_new_page_at_row)
-
-
         
         if splitting
           # remember this cell
@@ -124,8 +127,9 @@ module Prawn
         next if skip_header_rows[cell.row]
         old_height = cell.height
         cell.height = row(cell.row).height
+        puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 127)"
       end
-      
+
       return cells_this_page, offset
     end
 
@@ -196,20 +200,30 @@ module Prawn
 
           if split_cell.row < first_row_new_page
             split_cell.height = max_cell_height[first_row_new_page]
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} max_cell_height=#{max_cell_height}(ts 203)"
           else
             split_cell.height = max_cell_height[split_cell.row]
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 206)"
           end
         end
 
         # rows of dummy cells (may be on old or new page, that's what we filter for)
         row_numbers = split_cell.filtered_dummy_cells(split_cells.last.row, hash[:new_page]).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
         original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
-        extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
-        compensate_offset_for_height = (original_height - extra_height_for_row_dummies) if extra_height_for_row_dummies && extra_height_for_row_dummies > 0
+        if hash[:new_page]
+          extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
+        else
+          extra_height_for_row_dummies=row_numbers.map{ |row_number| max_cell_height[row_number]}.inject(:+)
+        end
+        
+        puts "@@@ cell #{split_cell.row}/#{split_cell.column} extra_height_for_row_dummies=#{extra_height_for_row_dummies}"
+        # compensate_offset_for_height = (original_height - extra_height_for_row_dummies) if extra_height_for_row_dummies && extra_height_for_row_dummies > 0
 
         # # the cell needs to be laid over the dummy cells, that's why we have to increase its height
         split_cell.height += extra_height_for_row_dummies || 0
-        
+        puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} row_numbers=#{row_numbers} (ts 218)"
+
+        # puts "@@@ cell #{split_cell.row}/#{split_cell.column} max_cell_height=#{max_cell_height} foo=#{foo}"
         # compensate y if necessary
         # split_cell.y += (split_cell.y_offset_new_page || 0) if hash[:new_page] && old_height == split_cell.height && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
         # split_cell.y += (split_cell.y_offset_new_page || 0) if hash[:new_page] && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
@@ -235,6 +249,7 @@ module Prawn
           
           # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
           # passed to relative_y solves your issue
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)}"
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
 
           # move the rest of the row of the canvas

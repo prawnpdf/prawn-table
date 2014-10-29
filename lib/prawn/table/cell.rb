@@ -337,6 +337,8 @@ module Prawn
 
       def recalculate_height_ignoring_span(respect_original_height = true)
         @height = calculate_height_ignoring_span(respect_original_height)
+        puts "@@@ cell #{row}/#{column} height=#{height} (c 340)"
+        @height
       end
 
       # Returns the cell's height in points, inclusive of padding. If the cell
