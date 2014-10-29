@@ -266,17 +266,34 @@ module Prawn
 
           height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached2[row_number]}.inject(:+)
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} (ts 257)"
-          if split_cell.row == 28 && split_cell.column == 0
+          if split_cell.row == 27 && split_cell.column == 0
             # foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
             foo = 0
             puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height_cached=#{@max_cell_height_cached} (ts 259)"
             puts "@@@ cell #{split_cell.row}/#{split_cell.column} rows #{split_cell.row+1}..#{split_cells.last.row}}"
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} cell.y_offset_new_page=#{split_cell.y_offset_new_page}"
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} @final_cell_last_page.y=#{@final_cell_last_page.y} this_cell.y=#{split_cell.y}"
             # height_of_additional_already_printed_rows = 23.872
             # height_of_additional_already_printed_rows = 0
+            # split_cell.y = @final_cell_last_page.y
           end
+
+          # adjust y position of cells from the last page
+          # example: 
+          # assume a cell spans 5 rows (let's say row 11, 12, 13, 14 and 15)
+          # three of them are on page 1, two on page 2
+          # the content of this spanned group of cells will be in the cell in row 11.
+          # thus this cell will be copied to page 2
+          # however the y position will be that of row 11. However we want it to be
+          # the position of row 13 (the last row on page 1)
+          if split_cell.y > @final_cell_last_page.y
+            height_of_additional_already_printed_rows = 0
+            split_cell.y = @final_cell_last_page.y
+          end
+
           # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
           # passed to relative_y solves your issue
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)} (ts 272)"
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset=#{offset} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)} (ts 272)"
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
 
           # move the rest of the row of the canvas
@@ -284,6 +301,7 @@ module Prawn
 
         # standard treatment
         else
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset=#{offset} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset)} (ts 288)"
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset)]] #unless split_cell.content.nil? || split_cell.content.empty?
         end
 
@@ -299,6 +317,8 @@ module Prawn
     def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells=false, offset=false)
       # print any remaining cells to be split
       print_split_cells(split_cells, cells_this_page, offset) if offset
+
+      @final_cell_last_page = split_cells.last if split_cells
 
       super
     end
