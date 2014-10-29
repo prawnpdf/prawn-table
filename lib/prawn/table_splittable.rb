@@ -177,32 +177,44 @@ module Prawn
     end
 
     def print_split_cells(split_cells, cells_this_page, offset, hash={})
+      
       compensate_offset_for_height = 0
       extra_height_for_row_dummies = 0
 
       cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
-      max_cell_height = cells_object.max_cell_heights
+      @max_cell_height = (@max_cell_height || {}).merge cells_object.max_cell_heights
+
+      # puts "@@@ cell 9/1 merge 1=#{@max_cell_height} 2=#{a} 3=#{@max_cell_height.merge a}"
+      
+      # puts "@@@ cell 9/1 merge2 1=#{@max_cell_height} 2=#{a} 3=#{@max_cell_height.merge a}"
       # cells_object.adjust_height_of_cells
 
       split_cells = cells_object.cells
       
       global_offset = 0
       split_cells.each do |split_cell|
+        if hash[:new_page]
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} new page"
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset = #{offset}"
+        end
+
         unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
           # if multiple cells of multiple rows are split it may happen that the cell
           # holding the text (and which will be rendered) is from an earlier row than
           # the last row on the last page (and thus the first row on the new page)
           # in this case set the height of this cell to the first line of the new page
           # otherwise just take the newely calculated row height
-          first_row_new_page = max_cell_height.keys.min || 0
+          first_row_new_page = @max_cell_height.keys.min || 0
 
           if split_cell.row < first_row_new_page
-            split_cell.height = max_cell_height[first_row_new_page]
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} max_cell_height=#{max_cell_height}(ts 203)"
+            split_cell.height = @max_cell_height[first_row_new_page]
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} @max_cell_height=#{@max_cell_height}(ts 203)"
           else
-            split_cell.height = max_cell_height[split_cell.row]
+            split_cell.height = @max_cell_height[split_cell.row]
             puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 206)"
           end
         end
@@ -213,7 +225,8 @@ module Prawn
         if hash[:new_page]
           extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
         else
-          extra_height_for_row_dummies=row_numbers.map{ |row_number| max_cell_height[row_number]}.inject(:+)
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} @max_cell_height=#{@max_cell_height}"
+          extra_height_for_row_dummies=row_numbers.map{ |row_number| @max_cell_height[row_number]}.inject(:+)
         end
         
         puts "@@@ cell #{split_cell.row}/#{split_cell.column} extra_height_for_row_dummies=#{extra_height_for_row_dummies}"
@@ -223,7 +236,7 @@ module Prawn
         split_cell.height += extra_height_for_row_dummies || 0
         puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} row_numbers=#{row_numbers} (ts 218)"
 
-        # puts "@@@ cell #{split_cell.row}/#{split_cell.column} max_cell_height=#{max_cell_height} foo=#{foo}"
+        # puts "@@@ cell #{split_cell.row}/#{split_cell.column} @max_cell_height=#{@max_cell_height} foo=#{foo}"
         # compensate y if necessary
         # split_cell.y += (split_cell.y_offset_new_page || 0) if hash[:new_page] && old_height == split_cell.height && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
         # split_cell.y += (split_cell.y_offset_new_page || 0) if hash[:new_page] && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
@@ -245,9 +258,15 @@ module Prawn
 
           # add it to the cells_this_page array and adjust the position accordingly
           # we need to take into account any rows that have already been printed
-          height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
-          
-          # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
+          # height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
+          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} (ts 257)"
+          # if split_cell.row == 9 && split_cell.column == 1
+          #   foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
+          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height=#{@max_cell_height} (ts 259)"
+          #   height_of_additional_already_printed_rows = 270 
+          # end
+          # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
           # passed to relative_y solves your issue
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)}"
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
@@ -263,7 +282,7 @@ module Prawn
         global_offset += compensate_offset_for_height
       end
 
-      return (max_cell_height.values.max || 0) - (global_offset || 0)
+      return (@max_cell_height.values.max || 0) - (global_offset || 0)
     end
 
     # ink and draw cells, then start a new page
