@@ -113,6 +113,19 @@ module Prawn
 
       cells_this_page, offset = print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
 
+      # ensure that each cell in each row is of equal height
+      skip_header_rows = Hash.new(false)
+      header_rows.each do |cell|
+        skip_header_rows[cell.row] = true
+      end
+
+      cells_this_page.each do |cell, cell_array|
+        next if cell.class == Prawn::Table::Cell::SpanDummy
+        next if skip_header_rows[cell.row]
+        old_height = cell.height
+        cell.height = row(cell.row).height
+      end
+      
       return cells_this_page, offset
     end
 
@@ -126,19 +139,6 @@ module Prawn
         cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, @cells.last)
         # draw split cells on to the new page
         print_split_cells(split_cells, cells_this_page, offset, new_page: true, current_row: @cells.last.row)
-      end
-
-      # ensure that each cell in each row is of equal height
-      skip_header_rows = Hash.new(false)
-      header_rows.each do |cell|
-        skip_header_rows[cell.row] = true
-      end
-
-      cells_this_page.each do |cell, cell_array|
-        next if cell.class == Prawn::Table::Cell::SpanDummy
-        next if skip_header_rows[cell.row]
-        old_height = cell.height
-        cell.height = row(cell.row).height
       end
 
       return cells_this_page, offset
