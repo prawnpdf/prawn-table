@@ -185,7 +185,7 @@ module Prawn
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
       @max_cell_height = cells_object.max_cell_heights
-      @max_cell_height_cached = (@max_cell_height_cached || {}).merge @max_cell_height
+      # @max_cell_height_cached = (@max_cell_height_cached || {}).merge @max_cell_height
 
       # puts "@@@ cell 9/1 merge 1=#{@max_cell_height} 2=#{a} 3=#{@max_cell_height.merge a}"
       
@@ -260,13 +260,20 @@ module Prawn
           # add it to the cells_this_page array and adjust the position accordingly
           # we need to take into account any rows that have already been printed
           # height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
-          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached[row_number]}.inject(:+)
+          
+          # manual merge - only take values that don't exist yet
+          @max_cell_height_cached2 = @max_cell_height_cached
+
+          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached2[row_number]}.inject(:+)
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} (ts 257)"
-          # if split_cell.row == 0 && split_cell.column == 1
+          if split_cell.row == 28 && split_cell.column == 0
             # foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
-            # puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height=#{@max_cell_height} (ts 259)"
-            # height_of_additional_already_printed_rows = 692
-          # end
+            foo = 0
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height_cached=#{@max_cell_height_cached} (ts 259)"
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} rows #{split_cell.row+1}..#{split_cells.last.row}}"
+            # height_of_additional_already_printed_rows = 23.872
+            # height_of_additional_already_printed_rows = 0
+          end
           # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
           # passed to relative_y solves your issue
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)} (ts 272)"
@@ -283,6 +290,8 @@ module Prawn
         global_offset += compensate_offset_for_height
       end
 
+      @max_cell_height_cached = cells_object.max_cell_heights(true)
+      puts "cell 27/0 cell 28/0 reloading new @max_cell_height_cached=#{@max_cell_height_cached}"
       return (@max_cell_height.values.max || 0) - (global_offset || 0)
     end
 
