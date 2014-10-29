@@ -173,10 +173,12 @@ module Prawn
       cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
+      max_cell_height = cells_object.max_cell_heights
+      # cells_object.adjust_height_of_cells
+
       split_cells = cells_object.cells
       
-      max_cell_height = cells_object.max_cell_heights
-
+      global_offset = 0
       split_cells.each do |split_cell|
         unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
           # if multiple cells of multiple rows are split it may happen that the cell
@@ -185,7 +187,7 @@ module Prawn
           # in this case set the height of this cell to the first line of the new page
           # otherwise just take the newely calculated row height
           first_row_new_page = max_cell_height.keys.min || 0
-          old_height = split_cell.height
+
           if split_cell.row < first_row_new_page
             split_cell.height = max_cell_height[first_row_new_page]
           else
@@ -195,12 +197,11 @@ module Prawn
 
         # rows of dummy cells (may be on old or new page, that's what we filter for)
         row_numbers = split_cell.filtered_dummy_cells(split_cells.last.row, hash[:new_page]).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-
         original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
         extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
         compensate_offset_for_height = (original_height - extra_height_for_row_dummies) if extra_height_for_row_dummies && extra_height_for_row_dummies > 0
 
-        # the cell needs to be laid over the dummy cells, that's why we have to increase its height
+        # # the cell needs to be laid over the dummy cells, that's why we have to increase its height
         split_cell.height += extra_height_for_row_dummies || 0
         
         # compensate y if necessary
@@ -237,13 +238,11 @@ module Prawn
         else
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset)]] #unless split_cell.content.nil? || split_cell.content.empty?
         end
+
+        global_offset += compensate_offset_for_height
       end
 
-      #FIXXME find out what this return value is used for
-      #FIXXME it used to be max_cell_height over all cells, not only a single row
-      #FIXXME neither the new, nor the old solution can possibly be correct
-
-      return (max_cell_height.values.max || 0) - (compensate_offset_for_height || 0)
+      return (max_cell_height.values.max || 0) - (global_offset || 0)
     end
 
     # ink and draw cells, then start a new page
