@@ -184,7 +184,8 @@ module Prawn
       cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
-      @max_cell_height = (@max_cell_height || {}).merge cells_object.max_cell_heights
+      @max_cell_height = cells_object.max_cell_heights
+      @max_cell_height_cached = (@max_cell_height_cached || {}).merge @max_cell_height
 
       # puts "@@@ cell 9/1 merge 1=#{@max_cell_height} 2=#{a} 3=#{@max_cell_height.merge a}"
       
@@ -259,16 +260,16 @@ module Prawn
           # add it to the cells_this_page array and adjust the position accordingly
           # we need to take into account any rows that have already been printed
           # height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
-          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
+          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached[row_number]}.inject(:+)
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} (ts 257)"
-          # if split_cell.row == 9 && split_cell.column == 1
-          #   foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
-          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height=#{@max_cell_height} (ts 259)"
-          #   height_of_additional_already_printed_rows = 270 
+          # if split_cell.row == 0 && split_cell.column == 1
+            # foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
+            # puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height=#{@max_cell_height} (ts 259)"
+            # height_of_additional_already_printed_rows = 692
           # end
           # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
           # passed to relative_y solves your issue
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)}"
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)} (ts 272)"
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
 
           # move the rest of the row of the canvas
