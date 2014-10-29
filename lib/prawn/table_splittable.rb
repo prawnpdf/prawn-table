@@ -111,6 +111,12 @@ module Prawn
         end
       end
 
+      cells_this_page, offset = print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
+
+      return cells_this_page, offset
+    end
+
+    def print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
       print_split_cells(split_cells, cells_this_page, offset)
 
       if splitting
