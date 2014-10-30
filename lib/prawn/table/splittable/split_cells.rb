@@ -34,43 +34,37 @@ module Prawn
 
       def adjust_height_of_cells
         @cells.each do |cell|
-          unless cell.is_a?(Prawn::Table::Cell::SpanDummy)
-            # if multiple cells of multiple rows are split it may happen that the cell
-            # holding the text (and which will be rendered) is from an earlier row than
-            # the last row on the last page (and thus the first row on the new page)
-            # in this case set the height of this cell to the first line of the new page
-            # otherwise just take the newely calculated row height
-            first_row_new_page = max_cell_heights.keys.min || 0
+          set_height_of_cell_to_max_cell_height(cell)
 
-            if cell.row < first_row_new_page
-              cell.height = max_cell_heights[first_row_new_page]
-              # puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} max_cell_heights=#{max_cell_heights}(ts 203)"
-            else
-              cell.height = max_cell_heights[cell.row]
-              # puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 206)"
-            end
-          end
+          # account for other rows that this cell spans
+          cell.height += extra_height_for_row_dummies(cell) || 0
+        end
+      end
 
-          row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-          original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
-          if @new_page
-            extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
-          else
-            puts "@@@ cell #{cell.row}/#{cell.column} @max_cell_height=#{max_cell_heights}"
-            extra_height_for_row_dummies=row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
-          end
-          
-          puts "@@@ cell #{cell.row}/#{cell.column} extra_height_for_row_dummies=#{extra_height_for_row_dummies}"
-          # compensate_offset_for_height = (original_height - extra_height_for_row_dummies) if extra_height_for_row_dummies && extra_height_for_row_dummies > 0
+      def extra_height_for_row_dummies(cell)
+        row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+        original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
+        if @new_page
+          return row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
+        else
+          return row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
+        end
+      end
 
-          # # the cell needs to be laid over the dummy cells, that's why we have to increase its height
-          cell.height += extra_height_for_row_dummies || 0
-          puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} row_numbers=#{row_numbers} (ts 218)"
+      def set_height_of_cell_to_max_cell_height(cell)
+        return if cell.is_a?(Prawn::Table::Cell::SpanDummy)
 
-        # row_numbers.each do |row_number|
-        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} reducing y for row #{row_number} by #{compensate_offset_for_height}"
-        #   row(row_number).reduce_y(compensate_offset_for_height)
-        # end
+        # if multiple cells of multiple rows are split it may happen that the cell
+        # holding the text (and which will be rendered) is from an earlier row than
+        # the last row on the last page (and thus the first row on the new page)
+        # in this case set the height of this cell to the first line of the new page
+        # otherwise just take the newely calculated row height
+        first_row_new_page = max_cell_heights.keys.min || 0
+
+        if cell.row < first_row_new_page
+          cell.height = max_cell_heights[first_row_new_page]
+        else
+          cell.height = max_cell_heights[cell.row]
         end
       end
 
