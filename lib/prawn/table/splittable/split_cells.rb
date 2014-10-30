@@ -43,7 +43,7 @@ module Prawn
 
       def extra_height_for_row_dummies(cell)
         row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-        original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
+
         if @new_page
           return row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
         else
