@@ -8,7 +8,7 @@ module Prawn
 
     # option passed to TableSplittable indicating that this table
     # should split final rows on a page if needed.
-    attr_accessor :split_cells_in_final_row
+    attr_accessor :split_cells_across_pages
 
     def process_cells(ref_bounds, started_new_page_at_row, offset)
       # Track cells to be drawn on this page. They will all be drawn when this
@@ -30,7 +30,7 @@ module Prawn
 
       @cells.each do |cell|
         puts "@@@ cell #{cell.row}/#{cell.column} content=#{cell.content}"
-        if defined?(@split_cells_in_final_row) && @split_cells_in_final_row && only_plain_text_cells(cell.row)
+        if defined?(@split_cells_across_pages) && @split_cells_across_pages && only_plain_text_cells(cell.row)
           
           max_available_height = (cell.y + offset) - ref_bounds.absolute_bottom
 

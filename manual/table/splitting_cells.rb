@@ -5,7 +5,7 @@
 # While it is known to work in many use cases, it is rather new code and not (yet) widely used, thus
 # the possibility for bugs is higher than usual.
 #
-# To activate this feature you need to pass <i>split_cells_in_final_row</i> to the table command.
+# To activate this feature you need to pass <i>split_cells_across_pages</i> to the table command.
 #
 # This will result in cells not being forced to a single page. The text can freely flow to the
 # next page.
@@ -27,5 +27,5 @@ Prawn::ManualBuilder::Example.generate(filename) do
             { content: "foo 0", height: 30 }]]
   17.times { |i| data.push [{ content: "foo #{i+1}", height: 30 }] }
 
-  table data, split_cells_in_final_row: true
+  table data, split_cells_across_pages: true
 end

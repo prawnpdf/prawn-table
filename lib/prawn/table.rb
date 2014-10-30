@@ -120,7 +120,7 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def make_table(data, options={}, &block)
-        if options[:split_cells_in_final_row]
+        if options[:split_cells_across_pages]
           TableSplittable.new(data, self, options, &block)
         else
           Table.new(data, self, options, &block)
