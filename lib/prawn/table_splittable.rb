@@ -191,40 +191,18 @@ module Prawn
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
       @max_cell_height = cells_object.max_cell_heights
-      # @max_cell_height_cached = (@max_cell_height_cached || {}).merge @max_cell_height
-
-      # puts "@@@ cell 9/1 merge 1=#{@max_cell_height} 2=#{a} 3=#{@max_cell_height.merge a}"
-      
-      # puts "@@@ cell 9/1 merge2 1=#{@max_cell_height} 2=#{a} 3=#{@max_cell_height.merge a}"
-      # cells_object.adjust_height_of_cells
+      cells_object.adjust_height_of_cells
 
       split_cells = cells_object.cells
       
       global_offset = 0
       split_cells.each do |split_cell|
-        if hash[:new_page]
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} new page"
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset = #{offset} content_new_page=#{split_cell.content_new_page}"
-        end
-
-        unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-          # if multiple cells of multiple rows are split it may happen that the cell
-          # holding the text (and which will be rendered) is from an earlier row than
-          # the last row on the last page (and thus the first row on the new page)
-          # in this case set the height of this cell to the first line of the new page
-          # otherwise just take the newely calculated row height
-          first_row_new_page = @max_cell_height.keys.min || 0
-
-          if split_cell.row < first_row_new_page
-            split_cell.height = @max_cell_height[first_row_new_page]
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} @max_cell_height=#{@max_cell_height}(ts 203)"
-          else
-            split_cell.height = @max_cell_height[split_cell.row]
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 206)"
-          end
-        end
+        # if hash[:new_page]
+        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
+        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} new page"
+        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
+        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset = #{offset} content_new_page=#{split_cell.content_new_page}"
+        # end
 
         # rows of dummy cells (may be on old or new page, that's what we filter for)
         row_numbers = split_cell.filtered_dummy_cells(split_cells.last.row, hash[:new_page]).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
