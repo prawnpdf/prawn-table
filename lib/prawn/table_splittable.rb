@@ -183,58 +183,18 @@ module Prawn
     end
 
     def print_split_cells(split_cells, cells_this_page, offset, hash={})
-      
-      compensate_offset_for_height = 0
-      extra_height_for_row_dummies = 0
 
       cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
       @max_cell_height = cells_object.max_cell_heights
+      # global_offset = cells_object.adjust_height_of_cells
       cells_object.adjust_height_of_cells
 
       split_cells = cells_object.cells
       
-      global_offset = 0
+      
       split_cells.each do |split_cell|
-        # if hash[:new_page]
-        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
-        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} new page"
-        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
-        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset = #{offset} content_new_page=#{split_cell.content_new_page}"
-        # end
-
-        # rows of dummy cells (may be on old or new page, that's what we filter for)
-        row_numbers = split_cell.filtered_dummy_cells(split_cells.last.row, hash[:new_page]).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-        original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
-        if hash[:new_page]
-          extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
-        else
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} @max_cell_height=#{@max_cell_height}"
-          extra_height_for_row_dummies=row_numbers.map{ |row_number| @max_cell_height[row_number]}.inject(:+)
-        end
-        
-        puts "@@@ cell #{split_cell.row}/#{split_cell.column} extra_height_for_row_dummies=#{extra_height_for_row_dummies}"
-        # compensate_offset_for_height = (original_height - extra_height_for_row_dummies) if extra_height_for_row_dummies && extra_height_for_row_dummies > 0
-
-        # # the cell needs to be laid over the dummy cells, that's why we have to increase its height
-        split_cell.height += extra_height_for_row_dummies || 0
-        puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} row_numbers=#{row_numbers} (ts 218)"
-
-        # puts "@@@ cell #{split_cell.row}/#{split_cell.column} @max_cell_height=#{@max_cell_height} foo=#{foo}"
-        # compensate y if necessary
-        # split_cell.y += (split_cell.y_offset_new_page || 0) if hash[:new_page] && old_height == split_cell.height && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-        # split_cell.y += (split_cell.y_offset_new_page || 0) if hash[:new_page] && !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-
-        # ensure that the cells are positioned correctly 
-        row_numbers.each do |row_number|
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} reducing y for row #{row_number} by #{compensate_offset_for_height}"
-          row(row_number).reduce_y(compensate_offset_for_height)
-        end
-
-        #
-        # add the split_cell to the cells_this_page array
-        #
 
         # special treatment for a very special case
         if hash[:new_page] && 
@@ -247,21 +207,21 @@ module Prawn
           # height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
           
           # manual merge - only take values that don't exist yet
-          @max_cell_height_cached2 = @max_cell_height_cached
+          # @max_cell_height_cached2 = @max_cell_height_cached
 
-          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached2[row_number]}.inject(:+)
+          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached[row_number]}.inject(:+)
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} (ts 257)"
-          if split_cell.row == 27 && split_cell.column == 0
-            # foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
-            foo = 0
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height_cached=#{@max_cell_height_cached} (ts 259)"
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} rows #{split_cell.row+1}..#{split_cells.last.row}}"
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} cell.y_offset_new_page=#{split_cell.y_offset_new_page}"
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} @final_cell_last_page.y=#{@final_cell_last_page.y} this_cell.y=#{split_cell.y}"
-            # height_of_additional_already_printed_rows = 23.872
-            # height_of_additional_already_printed_rows = 0
-            # split_cell.y = @final_cell_last_page.y
-          end
+          # if split_cell.row == 27 && split_cell.column == 0
+          #   # foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
+          #   foo = 0
+          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height_cached=#{@max_cell_height_cached} (ts 259)"
+          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} rows #{split_cell.row+1}..#{split_cells.last.row}}"
+          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} cell.y_offset_new_page=#{split_cell.y_offset_new_page}"
+          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} @final_cell_last_page.y=#{@final_cell_last_page.y} this_cell.y=#{split_cell.y}"
+          #   # height_of_additional_already_printed_rows = 23.872
+          #   # height_of_additional_already_printed_rows = 0
+          #   # split_cell.y = @final_cell_last_page.y
+          # end
 
           # adjust y position of cells from the last page
           # example: 
@@ -292,12 +252,12 @@ module Prawn
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset)]] #unless split_cell.content.nil? || split_cell.content.empty?
         end
 
-        global_offset += compensate_offset_for_height
+        # global_offset += compensate_offset_for_height
       end
 
       @max_cell_height_cached = cells_object.max_cell_heights(true)
       puts "cell 27/0 cell 28/0 reloading new @max_cell_height_cached=#{@max_cell_height_cached}"
-      return (@max_cell_height.values.max || 0) - (global_offset || 0)
+      return (@max_cell_height.values.max || 0)# - (global_offset || 0)
     end
 
     # ink and draw cells, then start a new page

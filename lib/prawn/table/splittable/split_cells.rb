@@ -50,6 +50,27 @@ module Prawn
               # puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 206)"
             end
           end
+
+          row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+          original_height = row_numbers.map { |row_number| row(row_number).height }.inject(:+)
+          if @new_page
+            extra_height_for_row_dummies = row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
+          else
+            puts "@@@ cell #{cell.row}/#{cell.column} @max_cell_height=#{max_cell_heights}"
+            extra_height_for_row_dummies=row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
+          end
+          
+          puts "@@@ cell #{cell.row}/#{cell.column} extra_height_for_row_dummies=#{extra_height_for_row_dummies}"
+          # compensate_offset_for_height = (original_height - extra_height_for_row_dummies) if extra_height_for_row_dummies && extra_height_for_row_dummies > 0
+
+          # # the cell needs to be laid over the dummy cells, that's why we have to increase its height
+          cell.height += extra_height_for_row_dummies || 0
+          puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} row_numbers=#{row_numbers} (ts 218)"
+
+        # row_numbers.each do |row_number|
+        #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} reducing y for row #{row_number} by #{compensate_offset_for_height}"
+        #   row(row_number).reduce_y(compensate_offset_for_height)
+        # end
         end
       end
 
