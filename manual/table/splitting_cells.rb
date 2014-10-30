@@ -1,6 +1,6 @@
 # encoding: utf-8
 #
-# <b> This is an optional experimential feature!</b>
+# <b> This is an optional and experimential feature!</b>
 #
 # While it is known to work in many use cases, it is rather new code and not (yet) widely used, thus
 # the possibility for bugs is higher than usual.
