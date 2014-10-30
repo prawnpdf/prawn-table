@@ -64,7 +64,10 @@ module Prawn
       # did anything fit at all?
       if content_that_fits && content_that_fits.length > 0
         cell.content = content_that_fits
-        cell.content_new_page = (cell.content_new_page  || '' ) + content_new_page(i)
+        if !cell.content_new_page.nil? && !(content_new_page(i).nil? || content_new_page(i) == '')
+          cell.content_new_page = ' ' + cell.content_new_page 
+        end
+        cell.content_new_page = content_new_page(i) + (cell.content_new_page   || '' )
       else
         cell.content = @original_content
       end

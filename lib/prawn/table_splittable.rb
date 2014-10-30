@@ -22,6 +22,12 @@ module Prawn
       splitting = false
       original_height = 0
 
+      # debug output
+      @cells.each do |split_cell|
+        puts "@@@ cell #{split_cell.row}/#{split_cell.column} original y=#{split_cell.y}"
+      end
+      # end debug output
+
       @cells.each do |cell|
         puts "@@@ cell #{cell.row}/#{cell.column} content=#{cell.content}"
         if defined?(@split_cells_in_final_row) && @split_cells_in_final_row && only_plain_text_cells(cell.row)
@@ -200,7 +206,7 @@ module Prawn
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} new page"
           puts "@@@ cell #{split_cell.row}/#{split_cell.column} #############"
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset = #{offset}"
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset = #{offset} content_new_page=#{split_cell.content_new_page}"
         end
 
         unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
@@ -244,6 +250,7 @@ module Prawn
 
         # ensure that the cells are positioned correctly 
         row_numbers.each do |row_number|
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} reducing y for row #{row_number} by #{compensate_offset_for_height}"
           row(row_number).reduce_y(compensate_offset_for_height)
         end
 
@@ -288,6 +295,7 @@ module Prawn
           # the position of row 13 (the last row on page 1)
           if split_cell.y > @final_cell_last_page.y
             height_of_additional_already_printed_rows = 0
+            puts "@@@ cell #{split_cell.row}/#{split_cell.column} adjusting y from #{split_cell.y} to #{@final_cell_last_page.y}"
             split_cell.y = @final_cell_last_page.y
           end
 
@@ -297,6 +305,7 @@ module Prawn
           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
 
           # move the rest of the row of the canvas
+          puts "@@@ cell #{split_cell.row}/#{split_cell.column} reducing y of row #{split_cell.row} by 2000"
           row(split_cell.row).reduce_y(-2000)
 
         # standard treatment

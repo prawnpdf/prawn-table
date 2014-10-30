@@ -39,6 +39,7 @@ module Prawn
 
         @max_cell_heights = Hash.new(0)
         cells.each do |cell|
+          puts "@@@ cell #{cell.row}/#{cell.column} content=#{cell.content} content_new_page=#{cell.content_new_page} content_new_page.class=#{cell.content_new_page.class}"
 
           # if we are on the new page, change the content of the cell
           # cell.content = cell.content_new_page if hash[:new_page]
@@ -55,7 +56,7 @@ module Prawn
 
           @max_cell_heights[cell.row] = cell_height if @max_cell_heights[cell.row] < cell_height unless cell.content.nil? || cell.content.empty? 
         end
-        puts "cell 27/0 cell 28/0 reloading = @max_cell_heights=#{@max_cell_heights}"
+        puts "cell 0/0 cell 27/0 cell 28/0 reloading = @max_cell_heights=#{@max_cell_heights}"
         @max_cell_heights
       end
       

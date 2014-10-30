@@ -491,6 +491,7 @@ module Prawn
       # Set the y-position of the cell within the parent bounds.
       #
       def y=(val)
+        puts "@@@ cell #{row}/#{column} y set from #{y} to #{val}"
         @point[1] = val
       end
 
