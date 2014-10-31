@@ -52,7 +52,7 @@ module Prawn
 
         @max_cell_heights = Hash.new(0)
         cells.each do |cell|
-          puts "@@@ cell #{cell.row}/#{cell.column} content=#{cell.content} content_new_page=#{cell.content_new_page} content_new_page.class=#{cell.content_new_page.class}"
+          next if cell.content.nil? || cell.content.empty? 
 
           # if we are on the new page, change the content of the cell
           # cell.content = cell.content_new_page if hash[:new_page]
@@ -62,12 +62,9 @@ module Prawn
           cell_height = cell.calculate_height_ignoring_span(respect_original_height)
 
           # account for the height of any rows this cell spans (new page)
-          rows = cell.dummy_cells.map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-          rows.each do |row_number|
-            cell_height -= row(row_number).height
-          end
+          cell_height -= height_of_row_dummies(cell)
 
-          @max_cell_heights[cell.row] = cell_height if @max_cell_heights[cell.row] < cell_height unless cell.content.nil? || cell.content.empty? 
+          @max_cell_heights[cell.row] = cell_height if @max_cell_heights[cell.row] < cell_height
         end
         
         @max_cell_heights
@@ -153,6 +150,16 @@ module Prawn
         else
           cell.height = max_cell_heights[cell.row]
         end
+      end
+
+      # calculate the height of all rows that the dummy cells of the given cell span
+      def height_of_row_dummies(cell)
+        height = 0
+        row_numbers = cell.dummy_cells.map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+        row_numbers.each do |row_number|
+          height += row(row_number).height
+        end
+        return height
       end
     end
   end
