@@ -1,3 +1,7 @@
+## 0.2.1
+
+* Allow the use of Prawn `2.x`, as it should not break table behavior.
+
 ## 0.2.0
 
 * Allow the use of any Prawn `1.x` release from `1.3` onwards.
