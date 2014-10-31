@@ -96,6 +96,15 @@ module Prawn
       ((cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
     end
 
+    def print(offset, max_cell_height_cached, final_cell_last_page)
+       # we might have to adjust the offset
+      adjust_offset = extra_offset(max_cell_height_cached, final_cell_last_page)
+       
+      # if the offset has to be adjusted, also correct the y position
+      cell.y = final_cell_last_page.y if adjust_offset?(final_cell_last_page)
+
+      cell_for_page = [cell, [cell.relative_x, cell.relative_y(offset - adjust_offset)]]
+    end
 
     private
 

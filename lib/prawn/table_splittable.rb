@@ -202,29 +202,15 @@ module Prawn
       cells_object.adjust_height_of_cells
       
       cells_object.cells.each do |split_cell|
-        cells_this_page << print_split_cell(split_cell, cells_object, offset)
+        cell = Prawn::Table::SplitCell.new(split_cell, cells_object)
+        
+        cells_this_page << cell.print(offset, @max_cell_height_cached, @final_cell_last_page)
+
+        row(split_cell.row).reduce_y(-2000) if cell.move_cells_off_canvas?
       end
 
       @max_cell_height_cached = cells_object.max_cell_heights(true)
       return (@max_cell_height.values.max || 0)
-    end
-
-    def print_split_cell(split_cell, cells_object, offset)
-      cell = Prawn::Table::SplitCell.new(split_cell, cells_object)
-
-      # we might have to adjust the offset
-      adjust_offset = cell.extra_offset(@max_cell_height_cached, @final_cell_last_page)
-       
-      # if the offset has to be adjusted, also correct the y position
-      split_cell.y = @final_cell_last_page.y if cell.adjust_offset?(@final_cell_last_page)
-
-      cell_for_page = [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - adjust_offset)]]
-      
-      # it may happen that a row is only present because a text cell rowspans into this page
-      # however the row itself is of no use, thus move it off the canvas
-      row(split_cell.row).reduce_y(-2000) if cell.move_cells_off_canvas?
-
-      return cell_for_page
     end
 
     # ink and draw cells, then start a new page
