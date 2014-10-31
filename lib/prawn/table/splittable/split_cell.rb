@@ -7,11 +7,16 @@ module Prawn
     # while doing this it also adjust the height of the cell to something reasonable
     class SplitCell
 
-    def initialize(cell)
+    def initialize(cell, cells=false)
       @cell = cell
-      @original_content = cell.content
-      @content_array = cell.content.split(' ')
+      if cell.content
+        @original_content = cell.content
+        @content_array = cell.content.split(' ')
+      end
+      @cells = cells
     end
+
+    attr_reader :cells
 
     attr_accessor :cell
 
@@ -38,6 +43,59 @@ module Prawn
 
       return self
     end
+
+# if hash[:new_page] && 
+#            !split_cell.is_a?(Prawn::Table::Cell::SpanDummy) &&
+#            !split_cell.dummy_cells.empty? && 
+#            split_cell.row < split_cells.last.row
+
+#           # add it to the cells_this_page array and adjust the position accordingly
+#           # we need to take into account any rows that have already been printed
+#           height_of_additional_already_printed_rows = cells_object.height_of_additional_already_printed_rows(split_cell, @max_cell_height_cached)
+
+#           # adjust y position of cells from the last page
+#           # example: 
+#           # assume a cell spans 5 rows (let's say row 11, 12, 13, 14 and 15)
+#           # three of them are on page 1, two on page 2
+#           # the content of this spanned group of cells will be in the cell in row 11.
+#           # thus this cell will be copied to page 2
+#           # however the y position will be that of row 11. However we want it to be
+#           # the position of row 13 (the last row on page 1)
+#           if split_cell.y > @final_cell_last_page.y
+#             height_of_additional_already_printed_rows = 0
+#             split_cell.y = @final_cell_last_page.y
+#           end
+
+#           # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
+#           # passed to relative_y solves your issue
+#           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
+
+#           # move the rest of the row of the canvas
+#           row(split_cell.row).reduce_y(-2000)
+
+
+    def adjust_offset?(final_cell_last_page)
+      return false unless move_cells_off_canvas?
+      (cell.y > final_cell_last_page.y)
+    end
+
+    def extra_offset(max_cell_heights_cached, final_cell_last_page)
+      return 0 if adjust_offset?(final_cell_last_page)
+      return 0 unless move_cells_off_canvas?
+      return height_of_additional_already_printed_rows(cells.last_row, max_cell_heights_cached)
+    end
+
+    def move_cells_off_canvas?
+      cells.new_page && 
+       !cell.is_a?(Prawn::Table::Cell::SpanDummy) &&
+       !cell.dummy_cells.empty? && 
+       cell.row < cells.last_row
+    end
+
+    def height_of_additional_already_printed_rows(last_row, max_cell_heights_cached)
+      ((cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
+    end
+
 
     private
 

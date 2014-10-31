@@ -199,76 +199,27 @@ module Prawn
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
       @max_cell_height = cells_object.max_cell_heights
-      # global_offset = cells_object.adjust_height_of_cells
       cells_object.adjust_height_of_cells
-
-      split_cells = cells_object.cells
       
-      
-      split_cells.each do |split_cell|
+      cells_object.cells.each do |split_cell|
 
-        # special treatment for a very special case
-        if hash[:new_page] && 
-           !split_cell.is_a?(Prawn::Table::Cell::SpanDummy) &&
-           !split_cell.dummy_cells.empty? && 
-           split_cell.row < split_cells.last.row
+        cell = Prawn::Table::SplitCell.new(split_cell, cells_object)
 
-          # add it to the cells_this_page array and adjust the position accordingly
-          # we need to take into account any rows that have already been printed
-          # height_of_additional_already_printed_rows = rows((split_cell.row+1)..(split_cells.last.row)).height
-          
-          # manual merge - only take values that don't exist yet
-          # @max_cell_height_cached2 = @max_cell_height_cached
+        # we might have to adjust the offset
+        adjust_offset = cell.extra_offset(@max_cell_height_cached, @final_cell_last_page)
+         
+        # if the offset has to be adjusted, also correct the y position
+        split_cell.y = @final_cell_last_page.y if cell.adjust_offset?(@final_cell_last_page)
 
-          height_of_additional_already_printed_rows = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height_cached[row_number]}.inject(:+)
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} height_of_additional_already_printed_rows=#{height_of_additional_already_printed_rows} (ts 257)"
-          # if split_cell.row == 27 && split_cell.column == 0
-          #   # foo = ((split_cell.row+1)..(split_cells.last.row)).map{ |row_number| @max_cell_height[row_number]}.inject(:+)
-          #   foo = 0
-          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} foo=#{foo} @max_cell_height_cached=#{@max_cell_height_cached} (ts 259)"
-          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} rows #{split_cell.row+1}..#{split_cells.last.row}}"
-          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} cell.y_offset_new_page=#{split_cell.y_offset_new_page}"
-          #   puts "@@@ cell #{split_cell.row}/#{split_cell.column} @final_cell_last_page.y=#{@final_cell_last_page.y} this_cell.y=#{split_cell.y}"
-          #   # height_of_additional_already_printed_rows = 23.872
-          #   # height_of_additional_already_printed_rows = 0
-          #   # split_cell.y = @final_cell_last_page.y
-          # end
+        cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - adjust_offset)]]
 
-          # adjust y position of cells from the last page
-          # example: 
-          # assume a cell spans 5 rows (let's say row 11, 12, 13, 14 and 15)
-          # three of them are on page 1, two on page 2
-          # the content of this spanned group of cells will be in the cell in row 11.
-          # thus this cell will be copied to page 2
-          # however the y position will be that of row 11. However we want it to be
-          # the position of row 13 (the last row on page 1)
-          if split_cell.y > @final_cell_last_page.y
-            height_of_additional_already_printed_rows = 0
-            puts "@@@ cell #{split_cell.row}/#{split_cell.column} adjusting y from #{split_cell.y} to #{@final_cell_last_page.y}"
-            split_cell.y = @final_cell_last_page.y
-          end
-
-          # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
-          # passed to relative_y solves your issue
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset=#{offset} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset - height_of_additional_already_printed_rows)} (ts 272)"
-          cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
-
-          # move the rest of the row of the canvas
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} reducing y of row #{split_cell.row} by 2000"
-          row(split_cell.row).reduce_y(-2000)
-
-        # standard treatment
-        else
-          puts "@@@ cell #{split_cell.row}/#{split_cell.column} offset=#{offset} cells_this_page cell.y=#{split_cell.y} cell.relative_y=#{split_cell.relative_y(offset)} (ts 288)"
-          cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset)]] #unless split_cell.content.nil? || split_cell.content.empty?
-        end
-
-        # global_offset += compensate_offset_for_height
+        # it may happen that a row is only present because a text cell rowspans into this page
+        # however the row itself is of no use, thus move it off the canvas
+        row(split_cell.row).reduce_y(-2000) if cell.move_cells_off_canvas?
       end
 
       @max_cell_height_cached = cells_object.max_cell_heights(true)
-      puts "cell 27/0 cell 28/0 reloading new @max_cell_height_cached=#{@max_cell_height_cached}"
-      return (@max_cell_height.values.max || 0)# - (global_offset || 0)
+      return (@max_cell_height.values.max || 0)
     end
 
     # ink and draw cells, then start a new page

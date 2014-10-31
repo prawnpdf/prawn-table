@@ -25,6 +25,8 @@ module Prawn
       # the table associated with this instance
       attr_reader :table
 
+      attr_reader :new_page
+
       # change content to the one needed for the new page
       def adjust_content_for_new_page
         cells.each do |cell|
@@ -96,7 +98,18 @@ module Prawn
         cells_new_page
       end
 
+      # def height_of_additional_already_printed_rows(split_cell, max_cell_heights_cached)
+      #   ((split_cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
+      # end
+
+      # the number of the last row
+      def last_row
+        cells.last.row
+      end
+
       private
+
+
 
       # cells that aren't located in the last row and that don't span
       # the last row with an attached dummy cell are irrelevant
