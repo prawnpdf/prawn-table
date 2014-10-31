@@ -126,15 +126,20 @@ module Prawn
       end
 
       def extra_height_for_row_dummies(cell)
-        row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+        relevant_cells = cell.filtered_dummy_cells(cells.last.row, @new_page)
+        row_numbers = calculate_row_numbers(relevant_cells)
 
+        return new_height_of_row_dummies(row_numbers)
+      end
+
+      # recalculate the height of the rows in question
+      def new_height_of_row_dummies(row_numbers)
         if @new_page
           return row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
         else
           return row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
         end
       end
-
       def set_height_of_cell_to_max_cell_height(cell)
         return if cell.is_a?(Prawn::Table::Cell::SpanDummy)
 
@@ -155,11 +160,16 @@ module Prawn
       # calculate the height of all rows that the dummy cells of the given cell span
       def height_of_row_dummies(cell)
         height = 0
-        row_numbers = cell.dummy_cells.map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+        row_numbers = calculate_row_numbers(cell.dummy_cells)
         row_numbers.each do |row_number|
           height += row(row_number).height
         end
         return height
+      end
+
+      # return the numbers of all rows in the given set of cells
+      def calculate_row_numbers(cells)
+        cells.map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
       end
     end
   end
