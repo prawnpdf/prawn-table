@@ -34,39 +34,16 @@ module Prawn
 
       def adjust_height_of_cells
         @cells.each do |cell|
+          puts "@@@ cell #{cell.row}/#{cell.column} entering adjust_height_of_cells height=#{cell.height}"
           set_height_of_cell_to_max_cell_height(cell)
-
+          puts "@@@ cell #{cell.row}/#{cell.column} after set_height_of_cell_to_max_cell_height height=#{cell.height}"
           # account for other rows that this cell spans
           cell.height += extra_height_for_row_dummies(cell) || 0
+          puts "@@@ cell #{cell.row}/#{cell.column} after extra_height_for_row_dummies height=#{cell.height}"
         end
       end
 
-      def extra_height_for_row_dummies(cell)
-        row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
-
-        if @new_page
-          return row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
-        else
-          return row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
-        end
-      end
-
-      def set_height_of_cell_to_max_cell_height(cell)
-        return if cell.is_a?(Prawn::Table::Cell::SpanDummy)
-
-        # if multiple cells of multiple rows are split it may happen that the cell
-        # holding the text (and which will be rendered) is from an earlier row than
-        # the last row on the last page (and thus the first row on the new page)
-        # in this case set the height of this cell to the first line of the new page
-        # otherwise just take the newely calculated row height
-        first_row_new_page = max_cell_heights.keys.min || 0
-
-        if cell.row < first_row_new_page
-          cell.height = max_cell_heights[first_row_new_page]
-        else
-          cell.height = max_cell_heights[cell.row]
-        end
-      end
+      
 
       # calculate the maximum height of each row
       def max_cell_heights(force_reload = false)
@@ -92,7 +69,7 @@ module Prawn
 
           @max_cell_heights[cell.row] = cell_height if @max_cell_heights[cell.row] < cell_height unless cell.content.nil? || cell.content.empty? 
         end
-        puts "cell 0/0 cell 27/0 cell 28/0 reloading = @max_cell_heights=#{@max_cell_heights}"
+        
         @max_cell_heights
       end
       
@@ -151,6 +128,32 @@ module Prawn
         @current_row_number - 1
       end
 
+      def extra_height_for_row_dummies(cell)
+        row_numbers = cell.filtered_dummy_cells(cells.last.row, @new_page).map { |dummy_cell| dummy_cell.row if dummy_cell.row_dummy? }.uniq.compact
+
+        if @new_page
+          return row_numbers.map { |row_number| row(row_number).recalculate_height }.inject(:+)
+        else
+          return row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
+        end
+      end
+
+      def set_height_of_cell_to_max_cell_height(cell)
+        return if cell.is_a?(Prawn::Table::Cell::SpanDummy)
+
+        # if multiple cells of multiple rows are split it may happen that the cell
+        # holding the text (and which will be rendered) is from an earlier row than
+        # the last row on the last page (and thus the first row on the new page)
+        # in this case set the height of this cell to the first line of the new page
+        # otherwise just take the newely calculated row height
+        first_row_new_page = max_cell_heights.keys.min || 0
+
+        if cell.row < first_row_new_page
+          cell.height = max_cell_heights[first_row_new_page]
+        else
+          cell.height = max_cell_heights[cell.row]
+        end
+      end
     end
   end
 end
