@@ -60,15 +60,23 @@ module Prawn
     # splits the content
     def split_content(content_that_fits, i)
       # did anything fit at all?
-      if content_that_fits && content_that_fits.length > 0
-        cell.content = content_that_fits
-        if !cell.content_new_page.nil? && !(content_new_page(i).nil? || content_new_page(i) == '')
-          cell.content_new_page = ' ' + cell.content_new_page 
-        end
-        cell.content_new_page = content_new_page(i) + (cell.content_new_page   || '' )
-      else
+      if !content_that_fits || content_that_fits.length == 0
         cell.content = @original_content
+        return
       end
+
+      cell.content = content_that_fits
+      cell.content_new_page = calculate_content_new_page(cell, i)
+    end
+
+    # return the content for a new page, based on the existing content_new_page
+    # and the calculated position in the content array where the cell is now split
+    def calculate_content_new_page(cell, i)
+      content_new_page = cell.content_new_page
+      if !cell.content_new_page.nil? && !(content_new_page(i).nil? || content_new_page(i) == '')
+        content_new_page = ' ' + content_new_page 
+      end
+      content_new_page(i) + (content_new_page   || '' )
     end
 
     def content_old_page(i)
