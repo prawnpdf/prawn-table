@@ -20,6 +20,9 @@ module Prawn
           @padding = [0, 0, 0, 0]
         end
 
+        # allow the corresponding master_cell to be read
+        attr_reader :master_cell
+
         # By default, a span dummy will never increase the height demand.
         #
         def natural_content_height
@@ -72,6 +75,11 @@ module Prawn
 
         def background_color
           @master_cell.background_color
+        end
+
+        # is this a SpanDummy for a rowspan?
+        def row_dummy?
+          (row != @master_cell.row)
         end
 
         private

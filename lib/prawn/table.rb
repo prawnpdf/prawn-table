@@ -15,6 +15,8 @@ require_relative 'table/cell/text'
 require_relative 'table/cell/subtable'
 require_relative 'table/cell/image'
 require_relative 'table/cell/span_dummy'
+require_relative 'table_splittable'
+
 
 module Prawn
   module Errors
@@ -107,7 +109,7 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def table(data, options={}, &block)
-        t = Table.new(data, self, options, &block)
+        t = make_table(data, options, &block)
         t.draw
         t
       end
@@ -118,7 +120,11 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def make_table(data, options={}, &block)
-        Table.new(data, self, options, &block)
+        if options[:split_cells_across_pages]
+          TableSplittable.new(data, self, options, &block)
+        else
+          Table.new(data, self, options, &block)
+        end
       end
     end
 
@@ -285,7 +291,21 @@ module Prawn
         # modified in before_rendering_page callbacks.
         @header_row = header_rows if @header
 
-        # Track cells to be drawn on this page. They will all be drawn when this
+        cells_this_page, offset = process_cells(ref_bounds, started_new_page_at_row, offset)
+
+        # Draw the last page of cells
+        ink_and_draw_cells(cells_this_page)
+
+        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
+      end
+    end
+
+    # process cells into cells_this_page array
+    # this function is overwritten in TableSplittable
+    # if you change any code here be sure to check if that function
+    # needs to be adapted too
+    def process_cells(ref_bounds, started_new_page_at_row, offset)
+      # Track cells to be drawn on this page. They will all be drawn when this
         # page is finished.
         cells_this_page = []
 
@@ -307,11 +327,7 @@ module Prawn
           cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
         end
 
-        # Draw the last page of cells
-        ink_and_draw_cells(cells_this_page)
-
-        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
-      end
+        return cells_this_page, offset
     end
 
     # Calculate and return the constrained column widths, taking into account
@@ -410,27 +426,30 @@ module Prawn
     end
 
     # should we start a new page? (does the current row fail to fit on this page)
-    def start_new_page?(cell, offset, ref_bounds)
-      # we only need to run this test on the first cell in a row
+    def start_new_page?(cell, offset, ref_bounds, allow_first_row=false)
+      # we need to run it on every column to ensure it won't break on rowspans
       # check if the rows height fails to fit on the page
       # check if the row is not the first on that page (wouldn't make sense to go to next page in this case)
-      (cell.column == 0 && cell.row > 0 &&
+      ((cell.row > 0 || allow_first_row) &&
        !row(cell.row).fits_on_current_page?(offset, ref_bounds))
     end
 
     # ink cells and then draw them
     def ink_and_draw_cells(cells_this_page, draw_cells = true)
       ink_cells(cells_this_page)
+
       Cell.draw_cells(cells_this_page) if draw_cells
     end
 
     # ink and draw cells, then start a new page
-    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
+    # split_cells and offset are only used in TableSplittable, used here to allow for function overload
+    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells=false, offset=false)
+
       # don't draw only a header
       draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
-      
+            
       ink_and_draw_cells(cells_this_page, draw_cells)
-      
+
       # start a new page or column
       @pdf.bounds.move_past_bottom
 

@@ -35,6 +35,10 @@ Prawn::ManualBuilder::Example.generate("table.pdf", :page_size => "FOLIO") do
       s.example "style"
     end
 
+    p.section "Splitting cells if necessary" do |s|
+      s.example "splitting_cells"
+    end
+
     p.intro do
       prose("Prawn comes with table support out of the box. Tables can be styled in whatever way you see fit. The whole table, rows, columns and cells can be styled independently from each other.
 
