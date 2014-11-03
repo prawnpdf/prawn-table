@@ -9,11 +9,11 @@ module Prawn
 
     def initialize(cell, cells=false)
       @cell = cell
+      @cells = cells
       if cell.content
         @original_content = cell.content
         @content_array = cell.content.split(' ')
       end
-      @cells = cells
     end
 
     attr_reader :cells
@@ -50,17 +50,20 @@ module Prawn
       return cell
     end
 
+    # should we adjust the offset?
     def adjust_offset?(final_cell_last_page)
       return false unless move_cells_off_canvas?
       (cell.y > final_cell_last_page.y)
     end
 
+    # calculate extra offset
     def extra_offset(max_cell_heights_cached, final_cell_last_page)
       return 0 if adjust_offset?(final_cell_last_page)
       return 0 unless move_cells_off_canvas?
       return height_of_additional_already_printed_rows(cells.last_row, max_cell_heights_cached)
     end
 
+    # should we move the cell off canvas?
     def move_cells_off_canvas?
       cells.new_page && 
        !cell.is_a?(Prawn::Table::Cell::SpanDummy) &&
@@ -68,10 +71,12 @@ module Prawn
        cell.row < cells.last_row
     end
 
+    # returns the height of any rows that have already been printed
     def height_of_additional_already_printed_rows(last_row, max_cell_heights_cached)
       ((cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
     end
 
+    # return array to be written to cells_this_page
     def print(offset, max_cell_height_cached, final_cell_last_page)
        # we might have to adjust the offset
       adjust_offset = extra_offset(max_cell_height_cached, final_cell_last_page)
@@ -122,10 +127,12 @@ module Prawn
       content_new_page(i) + (content_new_page   || '' )
     end
 
+    # returns the content that should be printed to the old page
     def content_old_page(i)
       @content_array[0..i].join(' ')
     end
 
+    # returns the content that should be printed to the new page
     def content_new_page(i)
       @content_array[i..-1].join(' ')
     end

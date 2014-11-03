@@ -4,27 +4,30 @@ require_relative 'table/splittable/split_cell'
 require_relative 'table/splittable/split_cells'
 
 module Prawn
+  # This class is an extension to Prawn::Table
+  # It allows the final row on a page to be split accross two pages
   class TableSplittable < Table
 
     # option passed to TableSplittable indicating that this table
     # should split final rows on a page if needed.
     attr_accessor :split_cells_across_pages
 
+
+    # this is the main function that is called from Prawn::Table.draw
+    # it processes all the cells, positioning them onto the table
+    # and splitting them if needed
     def process_cells(ref_bounds, started_new_page_at_row, offset)
-      # Track cells to be drawn on this page. They will all be drawn when this
-      # page is finished.
+
       cells_this_page = []
-
       split_cells = []
-
       splitting = false
 
       @cells.each do |cell|
 
+        # should we split cells?
         if split_cells?(cell)
-          
+          # the main work of splitting the cells of a row (here only for one cell) between two pages
           cell, split_cells, cells_this_page, splitting, offset, started_new_page_at_row = process_split_cell(cell, offset, ref_bounds, splitting, started_new_page_at_row, split_cells, cells_this_page)
-          
         elsif start_new_page?(cell, offset, ref_bounds) 
           # draw cells on the current page and then start a new one
           # this will also add a header to the new page if a header is set
@@ -55,6 +58,7 @@ module Prawn
       return cells_this_page, offset
     end
 
+    # takes care of the splitting and printing for a single cell
     def process_split_cell(cell, offset, ref_bounds, splitting, started_new_page_at_row, split_cells, cells_this_page)
       @row_to_split ||= -1
       @original_height ||= 0
@@ -88,6 +92,7 @@ module Prawn
       return cell, split_cells, cells_this_page, splitting, offset, started_new_page_at_row
     end
 
+    # the final page needs some special treatment
     def print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
       print_split_cells_single_page(split_cells, cells_this_page, offset)
 
@@ -102,18 +107,6 @@ module Prawn
       end
 
       return cells_this_page, offset
-    end
-
-    # split the content of the cell
-    def split_cell_content(cell, row_to_split, max_available_height)
-      # we don't process SpanDummy cells
-      # return cell if cell.is_a?(Prawn::Table::Cell::SpanDummy)
-
-      # return cell unless row_to_split == cell.row
-
-      # the main work
-      split_cell = Prawn::Table::SplitCell.new(cell).split(row_to_split, max_available_height)
-      return split_cell
     end
 
     # are all cells in this row normal text cells without any fancy formatting we can't easily handle when splitting cells
@@ -132,6 +125,9 @@ module Prawn
       return true
     end
 
+    # "print" cells that have been split onto a page
+    # print means - add it to the cells_this_page array
+    # this function will be used multiple times, once on the old and once on the new page
     def print_split_cells_single_page(split_cells, cells_this_page, offset, hash={})
       cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
       cells_object.adjust_content_for_new_page if hash[:new_page]
@@ -163,10 +159,12 @@ module Prawn
 
     private
 
+    # should we split cells at all?
     def split_cells?(cell)
       (defined?(@split_cells_across_pages) && @split_cells_across_pages && only_plain_text_cells(cell.row))
     end
 
+    # is it time to print the split cells?
     def print_split_cells?(split_cells, cell, max_available_height, started_new_page_at_row)
       cell_height = cell.calculate_height_ignoring_span
 
@@ -176,10 +174,14 @@ module Prawn
        !split_cells.empty?)
     end
 
+    # are we in the row after the one that has to be split?
     def have_we_passed_the_row_to_be_split?(cell, row_to_split)
       (row_to_split > -1 && cell.row > row_to_split && !cell.is_a?(Prawn::Table::Cell::SpanDummy))
     end
 
+    # print the cells that have been split
+    # it will acutally write/print the cells onto the old page
+    # for the new page print only means adding it to the cells_this_page variable
     def print_split_cells(cells_this_page, split_cells, cell, offset, original_height)
       # recalculate / resplit content for split_cells array
       # this may be necessary because a cell that spans multiple rows did not

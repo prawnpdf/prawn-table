@@ -43,6 +43,7 @@ module Prawn
         return cell
       end
 
+      # adjust the height of the cells
       def adjust_height_of_cells(options = {})
         @cells.each do |cell|
           cell = handle_cells_this_page(cell)
@@ -102,6 +103,7 @@ module Prawn
       
       attr_accessor :compensate_offset_for_height
 
+      # calculate by how much we have to compensate the offset
       def compensate_offset
         (max_cell_height.values.max || 0) - compensate_offset_for_height
       end
@@ -127,13 +129,13 @@ module Prawn
         cells_new_page
       end
 
+      # return the cells to be used on the old page
       def cells_old_page
+        # obviously we wouldn't have needed a function for this,
+        # but it makes the code more readable at the place
+        # that calls this function
         cells
       end
-
-      # def height_of_additional_already_printed_rows(split_cell, max_cell_heights_cached)
-      #   ((split_cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
-      # end
 
       # the number of the first row
       def first_row
@@ -147,6 +149,9 @@ module Prawn
         cells.last.row
       end
 
+      # resplit the content
+      # meaning that we ensure that the content really fits
+      # into the cell on the old page and resplit it if necessary
       def resplit_content
         cells.each do |cell|
 
@@ -159,8 +164,6 @@ module Prawn
         return cells
       end
       private
-
-
 
       # cells that aren't located in the last row and that don't span
       # the last row with an attached dummy cell are irrelevant
@@ -189,6 +192,8 @@ module Prawn
         @current_row_number - 1
       end
 
+      # how much height should we allocated for the rows that are spanned by
+      # the row dummies
       def extra_height_for_row_dummies(cell)
         relevant_cells = cell.filtered_dummy_cells(last_row, @new_page)
         row_numbers = calculate_row_numbers(relevant_cells)
@@ -204,6 +209,8 @@ module Prawn
           return row_numbers.map{ |row_number| max_cell_heights[row_number]}.inject(:+)
         end
       end
+
+      # sets the height of the cell to the maximum of all given cells
       def set_height_of_cell_to_max_cell_height(cell)
         return if cell.is_a?(Prawn::Table::Cell::SpanDummy)
 
