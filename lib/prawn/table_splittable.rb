@@ -17,39 +17,14 @@ module Prawn
 
       split_cells = []
 
-      row_to_split = -1
       splitting = false
-      original_height = 0
 
       @cells.each do |cell|
 
         if split_cells?(cell)
           
-          max_available_height = (cell.y + offset) - ref_bounds.absolute_bottom
-
-          # should the row be split?
-          if start_new_page?(cell, offset, ref_bounds, true) && max_available_height > 0
-            row_to_split = cell.row
-            original_height = cell.height
-            splitting = true
-          end
-
-          # split cell content and adjust height of cell
-          cell = Prawn::Table::SplitCell.new(cell).split(row_to_split, max_available_height)
-
-          # reset row_to_split variable if we're in the next row
-          row_to_split = -1 if have_we_passed_the_row_to_be_split?(cell, row_to_split)
-
-          if print_split_cells?(split_cells, cell, max_available_height, started_new_page_at_row)
-
-            cells_this_page, offset = print_split_cells(cells_this_page, split_cells, cell, offset, original_height)
-
-            split_cells = []
-            splitting=false
-            
-            # remember the current row for background coloring
-            started_new_page_at_row = cell.row
-          end
+          cell, split_cells, cells_this_page, splitting, offset, started_new_page_at_row = process_split_cell(cell, offset, ref_bounds, splitting, started_new_page_at_row, split_cells, cells_this_page)
+          
         elsif start_new_page?(cell, offset, ref_bounds) 
           # draw cells on the current page and then start a new one
           # this will also add a header to the new page if a header is set
@@ -78,6 +53,39 @@ module Prawn
       cells_this_page = cells_object.adjust_height_of_final_cells(header_rows, started_new_page_at_row)
 
       return cells_this_page, offset
+    end
+
+    def process_split_cell(cell, offset, ref_bounds, splitting, started_new_page_at_row, split_cells, cells_this_page)
+      @row_to_split ||= -1
+      @original_height ||= 0
+
+      max_available_height = (cell.y + offset) - ref_bounds.absolute_bottom
+
+       # should the row be split?
+      if start_new_page?(cell, offset, ref_bounds, true) && max_available_height > 0
+        @row_to_split = cell.row
+        @original_height = cell.height
+        splitting = true
+      end
+
+      # split cell content and adjust height of cell
+      cell = Prawn::Table::SplitCell.new(cell).split(@row_to_split, max_available_height)
+
+      # reset @row_to_split variable if we're in the next row
+      @row_to_split = -1 if have_we_passed_the_row_to_be_split?(cell, @row_to_split)
+
+      if print_split_cells?(split_cells, cell, max_available_height, started_new_page_at_row)
+
+        cells_this_page, offset = print_split_cells(cells_this_page, split_cells, cell, offset, @original_height)
+
+        split_cells = []
+        splitting=false
+        
+        # remember the current row for background coloring
+        started_new_page_at_row = cell.row
+      end
+
+      return cell, split_cells, cells_this_page, splitting, offset, started_new_page_at_row
     end
 
     def print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
