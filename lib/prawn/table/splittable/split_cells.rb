@@ -107,7 +107,7 @@ module Prawn
       end
 
       # remove any cells from the cells array that are not needed on the new page
-      def calculate_cells_new_page
+      def cells_new_page
         # is there some content to display coming from the last row on the last page?
         # found_some_content_in_the_last_row_on_the_last_page = false
         # cells.each do |split_cell|
@@ -127,12 +127,16 @@ module Prawn
         cells_new_page
       end
 
+      def cells_old_page
+        cells
+      end
+
       # def height_of_additional_already_printed_rows(split_cell, max_cell_heights_cached)
       #   ((split_cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
       # end
 
       # the number of the first row
-      def last_row
+      def first_row
         return cells.first[0].row if @cells_this_page_option
         cells.first.row
       end
@@ -143,6 +147,17 @@ module Prawn
         cells.last.row
       end
 
+      def resplit_content
+        cells.each do |cell|
+
+          cell.height = 0 unless cell.is_a?(Prawn::Table::Cell::SpanDummy)
+
+          max_available_height = rows(first_row..last_row).height
+
+          Prawn::Table::SplitCell.new(cell).split(cell.row, max_available_height)
+        end
+        return cells
+      end
       private
 
 

@@ -178,7 +178,6 @@ module Prawn
       def recalculate_height
         each do |cell|
           cell.recalculate_height_ignoring_span
-          puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (cells 181)"
         end
         height
       end
@@ -186,9 +185,7 @@ module Prawn
       # reduce the y value in all cells by a given amount
       def reduce_y(amount)
         each do |cell|
-          puts "@@@ cell #{cell.row}/#{cell.column} y=#{cell.y} (cells 189)"
           cell.y -= amount
-          puts "@@@ cell #{cell.row}/#{cell.column} y=#{cell.y} (cells 191)"
         end
       end
 
