@@ -35,42 +35,18 @@ module Prawn
           end
 
           # split cell content and adjust height of cell
-          # cell = split_cell_content(cell, row_to_split, max_available_height)
           cell = Prawn::Table::SplitCell.new(cell).split(row_to_split, max_available_height)
 
           # reset row_to_split variable if we're in the next row
-          if row_to_split > -1 && cell.row > row_to_split && !cell.is_a?(Prawn::Table::Cell::SpanDummy)
-            row_to_split = -1
-          end
+          row_to_split = -1 if have_we_passed_the_row_to_be_split?(cell, row_to_split)
 
           if print_split_cells?(split_cells, cell, max_available_height, started_new_page_at_row)
-            # recalculate / resplit content for split_cells array
-            # this may be necessary because a cell that spans multiple rows did not
-            # know anything about needed height changes in subsequent rows when the text was split
-            # e.g. original n+1 lines where able to be printed in the remaining space, however
-            # a splitting of a later row resulted in a table that was smaller than the theoretical
-            # maximum that was used in the original calculation (for example due to the padding)
-            # thus the last line can't be printed because there is only space for n lines
-            cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, current_row_number: cell.row)
-            # O(n^2) on the cells about to be split
-            # maybe we can improve this at some point in the future
-            split_cells = cells_object.resplit_content
 
-            # draw cells on the current page and then start a new one
-            # this will also add a header to the new page if a header is set
-            # reset array of cells for the new page
-            cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell, cells_object.cells_old_page, offset)
+            cells_this_page, offset = print_split_cells(cells_this_page, split_cells, cell, offset, original_height)
 
-            # any remaining cells to be split will have been split by the ink_and_draw_cells_and_start_new_page command
-            # calculate which cells should be shown on the new page
-            # -> which shows wheren't fully rendered on the last one
             split_cells = []
             splitting=false
             
-            # draw split cells on to the new page
-            split_cell_height = print_split_cells(cells_object.cells_new_page, cells_this_page, offset - original_height, new_page: true, current_row: cell.row)
-            offset -= split_cell_height
-
             # remember the current row for background coloring
             started_new_page_at_row = cell.row
           end
@@ -105,7 +81,7 @@ module Prawn
     end
 
     def print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
-      print_split_cells(split_cells, cells_this_page, offset)
+      print_split_cells_single_page(split_cells, cells_this_page, offset)
 
       if splitting
         # draw cells on the current page and then start a new one
@@ -114,7 +90,7 @@ module Prawn
         cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, @cells.last)
 
         # draw split cells on to the new page
-        print_split_cells(split_cells, cells_this_page, offset, new_page: true, current_row: @cells.last.row)
+        print_split_cells_single_page(split_cells, cells_this_page, offset, new_page: true, current_row: @cells.last.row)
       end
 
       return cells_this_page, offset
@@ -148,7 +124,7 @@ module Prawn
       return true
     end
 
-    def print_split_cells(split_cells, cells_this_page, offset, hash={})
+    def print_split_cells_single_page(split_cells, cells_this_page, offset, hash={})
       cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, new_page: hash[:new_page])
       cells_object.adjust_content_for_new_page if hash[:new_page]
       
@@ -170,7 +146,7 @@ module Prawn
     # ink and draw cells, then start a new page
     def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells=false, offset=false)
       # print any remaining cells to be split
-      print_split_cells(split_cells, cells_this_page, offset) if offset
+      print_split_cells_single_page(split_cells, cells_this_page, offset) if offset
 
       @final_cell_last_page = split_cells.last if split_cells
 
@@ -190,6 +166,38 @@ module Prawn
        cell.row > started_new_page_at_row && 
        !cell.is_a?(Prawn::Table::Cell::SpanDummy) && 
        !split_cells.empty?)
+    end
+
+    def have_we_passed_the_row_to_be_split?(cell, row_to_split)
+      (row_to_split > -1 && cell.row > row_to_split && !cell.is_a?(Prawn::Table::Cell::SpanDummy))
+    end
+
+    def print_split_cells(cells_this_page, split_cells, cell, offset, original_height)
+      # recalculate / resplit content for split_cells array
+      # this may be necessary because a cell that spans multiple rows did not
+      # know anything about needed height changes in subsequent rows when the text was split
+      # e.g. original n+1 lines where able to be printed in the remaining space, however
+      # a splitting of a later row resulted in a table that was smaller than the theoretical
+      # maximum that was used in the original calculation (for example due to the padding)
+      # thus the last line can't be printed because there is only space for n lines
+      cells_object = Prawn::Table::SplitCells.new(split_cells, table: self, current_row_number: cell.row)
+      
+      # O(n^2) on the cells about to be split
+      # maybe we can improve this at some point in the future
+      cells_object.resplit_content
+
+      # draw cells on the current page and then start a new one
+      # this will also add a header to the new page if a header is set
+      # reset array of cells for the new page
+      cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell, cells_object.cells_old_page, offset)
+
+      # any remaining cells to be split will have been split by the ink_and_draw_cells_and_start_new_page command
+
+      # draw split cells on to the new page
+      split_cell_height = print_split_cells_single_page(cells_object.cells_new_page, cells_this_page, offset - original_height, new_page: true, current_row: cell.row)
+      offset -= split_cell_height
+
+      return cells_this_page, offset
     end
   end
 end
