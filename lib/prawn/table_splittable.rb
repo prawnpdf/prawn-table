@@ -133,19 +133,8 @@ module Prawn
 
       cells_this_page, offset = print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
 
-      # ensure that each cell in each row is of equal height
-      skip_header_rows = Hash.new(false)
-      header_rows.each do |cell|
-        skip_header_rows[cell.row] = true
-      end
-
-      cells_this_page.each do |cell, cell_array|
-        next if cell.class == Prawn::Table::Cell::SpanDummy
-        next if skip_header_rows[cell.row]
-        old_height = cell.height
-        cell.height = row(cell.row).height
-        puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 127)"
-      end
+      cells_object = Prawn::Table::SplitCells.new(cells_this_page, cells_this_page: true, table: self)
+      cells_this_page = cells_object.adjust_height_of_final_cells(header_rows, started_new_page_at_row)
 
       return cells_this_page, offset
     end

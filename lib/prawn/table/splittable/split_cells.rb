@@ -11,6 +11,7 @@ module Prawn
         @current_row_number = options[:current_row_number]
         @new_page = options[:new_page]
         @table = options[:table]
+        @cells_this_page_option = options[:cells_this_page]
         compensate_offset_for_height = 0
       end
 
@@ -30,12 +31,23 @@ module Prawn
       # change content to the one needed for the new page
       def adjust_content_for_new_page
         cells.each do |cell|
+          cell = handle_cells_this_page(cell)
           cell.content = cell.content_new_page
         end
       end
 
-      def adjust_height_of_cells
+      # cells_this_page and split_cells are formatted differently
+      # adjust accordingly for cells.each calls
+      def handle_cells_this_page(cell)
+        return cell[0] if @cells_this_page_option
+        return cell
+      end
+
+      def adjust_height_of_cells(options = {})
         @cells.each do |cell|
+          cell = handle_cells_this_page(cell)
+          next if options[:skip_rows] && options[:skip_rows].include?(cell.row)
+
           puts "@@@ cell #{cell.row}/#{cell.column} entering adjust_height_of_cells height=#{cell.height}"
           set_height_of_cell_to_max_cell_height(cell)
           puts "@@@ cell #{cell.row}/#{cell.column} after set_height_of_cell_to_max_cell_height height=#{cell.height}"
@@ -45,7 +57,24 @@ module Prawn
         end
       end
 
-      
+      # we don't want to resize header cells and cells from earlier pages
+      # (that span into the current one) on the final page
+      def adjust_height_of_final_cells(header_rows, first_row_new_page)
+        skip_row_numbers = []
+        # don't resize the header
+        header_rows.each do |cell|
+          skip_row_numbers.push cell.row
+        end
+        # don't resize cells from former pages (that span into this page)
+        0..first_row_new_page.times do |i|
+          skip_row_numbers.push i
+        end
+        skip_row_numbers.uniq!
+
+        adjust_height_of_cells(skip_rows: skip_row_numbers)
+
+        return cells
+      end
 
       # calculate the maximum height of each row
       def max_cell_heights(force_reload = false)
@@ -54,6 +83,7 @@ module Prawn
 
         @max_cell_heights = Hash.new(0)
         cells.each do |cell|
+          cell = handle_cells_this_page(cell)
           next if cell.content.nil? || cell.content.empty? 
 
           # if we are on the new page, change the content of the cell
@@ -89,6 +119,7 @@ module Prawn
 
         cells_new_page = []
         cells.each do |split_cell|
+          split_cell = handle_cells_this_page(split_cell)
           next if irrelevant_cell?(split_cell)
 
           # all tests passed. print it - meaning add it to the array
@@ -104,6 +135,7 @@ module Prawn
 
       # the number of the last row
       def last_row
+        return cells.last[0].row if @cells_this_page_option
         cells.last.row
       end
 
@@ -139,7 +171,7 @@ module Prawn
       end
 
       def extra_height_for_row_dummies(cell)
-        relevant_cells = cell.filtered_dummy_cells(cells.last.row, @new_page)
+        relevant_cells = cell.filtered_dummy_cells(last_row, @new_page)
         row_numbers = calculate_row_numbers(relevant_cells)
 
         return new_height_of_row_dummies(row_numbers)
