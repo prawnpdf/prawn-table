@@ -37,7 +37,7 @@ module Prawn
           end
 
           # split cell content and adjust height of cell
-          cell = split_cell_content(cell, row_to_split, max_available_height)
+          cell = Prawn::Table::SplitCell.new(cell).split(row_to_split, max_available_height)
 
           # reset row_to_split variable if we're in the next row
           if row_to_split > -1 && cell.row > row_to_split && !cell.is_a?(Prawn::Table::Cell::SpanDummy)
@@ -58,20 +58,22 @@ module Prawn
             # a splitting of a later row resulted in a table that was smaller than the theoretical
             # maximum that was used in the original calculation (for example due to the padding)
             # thus the last line can't be printed because there is only space for n lines
+
+            cells_object = Prawn::Table::SplitCells.new(split_cells, table: self)
             recalculated_split_cells = []
             first_row = split_cells.first.row
             last_row = split_cells.last.row
+            max_available_height = rows(first_row..last_row).height
             # O(n^2) on the cells about to be split
             # maybe we can improve this at some point in the future
 
             split_cells.each do |split_cell|
-
               split_cell.height = 0 unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
 
-              max_available_height = rows(first_row..last_row).height
-
-              split_cell_content(split_cell, split_cell.row, max_available_height)
+              Prawn::Table::SplitCell.new(split_cell).split(split_cell.row, max_available_height)
             end
+
+
 
             # draw cells on the current page and then start a new one
             # this will also add a header to the new page if a header is set
@@ -136,18 +138,6 @@ module Prawn
       end
 
       return cells_this_page, offset
-    end
-
-    # split the content of the cell
-    def split_cell_content(cell, row_to_split, max_available_height)
-      # we don't process SpanDummy cells
-      return cell if cell.is_a?(Prawn::Table::Cell::SpanDummy)
-
-      return cell unless row_to_split == cell.row
-
-      # the main work
-      split_cell = Prawn::Table::SplitCell.new(cell).split(max_available_height)
-      return split_cell.cell
     end
 
     # are all cells in this row normal text cells without any fancy formatting we can't easily handle when splitting cells

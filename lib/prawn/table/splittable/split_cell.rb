@@ -20,8 +20,14 @@ module Prawn
 
     attr_accessor :cell
 
+
     # split the content of the cell and adjust the height
-    def split(max_available_height)
+    def split(row_to_split, max_available_height)
+      # we don't process SpanDummy cells
+      return cell if cell.is_a?(Prawn::Table::Cell::SpanDummy)
+
+      return cell unless row_to_split == cell.row
+
       # prepare everything for the while loop
       # first we're gonna check if a single word fits the available space
       i = 0
@@ -41,38 +47,8 @@ module Prawn
       # recalcualte height for the cell in question
       recalculate_height(include_dummy_cells: true)
 
-      return self
+      return cell
     end
-
-# if hash[:new_page] && 
-#            !split_cell.is_a?(Prawn::Table::Cell::SpanDummy) &&
-#            !split_cell.dummy_cells.empty? && 
-#            split_cell.row < split_cells.last.row
-
-#           # add it to the cells_this_page array and adjust the position accordingly
-#           # we need to take into account any rows that have already been printed
-#           height_of_additional_already_printed_rows = cells_object.height_of_additional_already_printed_rows(split_cell, @max_cell_height_cached)
-
-#           # adjust y position of cells from the last page
-#           # example: 
-#           # assume a cell spans 5 rows (let's say row 11, 12, 13, 14 and 15)
-#           # three of them are on page 1, two on page 2
-#           # the content of this spanned group of cells will be in the cell in row 11.
-#           # thus this cell will be copied to page 2
-#           # however the y position will be that of row 11. However we want it to be
-#           # the position of row 13 (the last row on page 1)
-#           if split_cell.y > @final_cell_last_page.y
-#             height_of_additional_already_printed_rows = 0
-#             split_cell.y = @final_cell_last_page.y
-#           end
-
-#           # # if you ever search for an error in the next line, you may want to check if adding split_cell.y_offset_new_page to the value
-#           # passed to relative_y solves your issue
-#           cells_this_page << [split_cell, [split_cell.relative_x, split_cell.relative_y(offset - height_of_additional_already_printed_rows)]]
-
-#           # move the rest of the row of the canvas
-#           row(split_cell.row).reduce_y(-2000)
-
 
     def adjust_offset?(final_cell_last_page)
       return false unless move_cells_off_canvas?
