@@ -48,12 +48,10 @@ module Prawn
           cell = handle_cells_this_page(cell)
           next if options[:skip_rows] && options[:skip_rows].include?(cell.row)
 
-          puts "@@@ cell #{cell.row}/#{cell.column} entering adjust_height_of_cells height=#{cell.height}"
           set_height_of_cell_to_max_cell_height(cell)
-          puts "@@@ cell #{cell.row}/#{cell.column} after set_height_of_cell_to_max_cell_height height=#{cell.height}"
+
           # account for other rows that this cell spans
-          cell.height += extra_height_for_row_dummies(cell) || 0
-          puts "@@@ cell #{cell.row}/#{cell.column} after extra_height_for_row_dummies height=#{cell.height}"
+          cell.height += extra_height_for_row_dummies(cell)
         end
       end
 
@@ -133,6 +131,12 @@ module Prawn
       #   ((split_cell.row+1..last_row)).map{ |row_number| max_cell_heights_cached[row_number]}.inject(:+)
       # end
 
+      # the number of the first row
+      def last_row
+        return cells.first[0].row if @cells_this_page_option
+        cells.first.row
+      end
+
       # the number of the last row
       def last_row
         return cells.last[0].row if @cells_this_page_option
@@ -174,7 +178,7 @@ module Prawn
         relevant_cells = cell.filtered_dummy_cells(last_row, @new_page)
         row_numbers = calculate_row_numbers(relevant_cells)
 
-        return new_height_of_row_dummies(row_numbers)
+        return new_height_of_row_dummies(row_numbers) || 0
       end
 
       # recalculate the height of the rows in question

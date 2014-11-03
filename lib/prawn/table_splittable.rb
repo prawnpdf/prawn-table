@@ -51,7 +51,6 @@ module Prawn
             cell.row > started_new_page_at_row && 
             !split_cells.empty? &&
             !cell.is_a?(Prawn::Table::Cell::SpanDummy)
-            puts "@@@ cell #{cell.row}/#{cell.column} entering path 1"
             # recalculate / resplit content for split_cells array
             # this may be necessary because a cell that spans multiple rows did not
             # know anything about needed height changes in subsequent rows when the text was split
@@ -67,27 +66,17 @@ module Prawn
 
             split_cells.each do |split_cell|
 
-              old_height = split_cell.height
-              old_y = split_cell.y
-              puts "@@@ cell 5/27 cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} cell.class=#{split_cell.class} (ts 120)"
               split_cell.height = 0 unless split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
-              puts "@@@ cell 5/27 cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 122)"
 
               max_available_height = rows(first_row..last_row).height
 
               split_cell_content(split_cell, split_cell.row, max_available_height)
-
-              puts "@@@ cell #{split_cell.row}/#{split_cell.column} height=#{split_cell.height} (ts 145)"
-              split_cell.y_offset_new_page = (old_height - split_cell.height) if !split_cell.is_a?(Prawn::Table::Cell::SpanDummy)
             end
 
             # draw cells on the current page and then start a new one
             # this will also add a header to the new page if a header is set
             # reset array of cells for the new page
-            puts "cell 5/27 just before ink_and_draw_cells_and_start_new_page"
-
             cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell, split_cells, offset)
-            puts "cell 5/27 just after ink_and_draw_cells_and_start_new_page"
 
             # any remaining cells to be split will have been split by the ink_and_draw_cells_and_start_new_page command
             # calculate which cells should be shown on the new page
@@ -99,13 +88,11 @@ module Prawn
             # draw split cells on to the new page
             split_cell_height = print_split_cells(split_cells_new_page, cells_this_page, offset - original_height, new_page: true, current_row: cell.row)
             offset -= split_cell_height
-            puts "@@@ cell #{cell.row}/#{cell.column} reducing offset by #{split_cell_height} (ts 89)"
 
             # remember the current row for background coloring
             started_new_page_at_row = cell.row
           end
         elsif start_new_page?(cell, offset, ref_bounds) 
-          puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 105)"
           # draw cells on the current page and then start a new one
           # this will also add a header to the new page if a header is set
           # reset array of cells for the new page
@@ -117,19 +104,15 @@ module Prawn
 
         # Set background color, if any.
         cell = set_background_color(cell, started_new_page_at_row)
-
-        puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 140)"
         
         if splitting
           # remember this cell
           split_cells.push cell
         else
           # add the current cell to the cells array for the current page
-          puts "@@@ cell #{cell.row}/#{cell.column} height=#{cell.height} (ts 147)"
           cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
         end
       end
-      puts "@@@ cell 5/27 entering final page processing"
 
       cells_this_page, offset = print_split_cells_on_final_page(split_cells, cells_this_page, offset, splitting)
 
