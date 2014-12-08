@@ -12,7 +12,6 @@ if ENV["COVERAGE"]
   end
 end
 
-require "prawn"
 require_relative "../lib/prawn/table"
 
 Prawn.debug = true
