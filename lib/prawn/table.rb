@@ -7,6 +7,7 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 
 
+require 'prawn'
 require_relative 'table/column_width_calculator'
 require_relative 'table/cell'
 require_relative 'table/cells'
