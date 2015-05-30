@@ -1258,7 +1258,7 @@ describe "Prawn::Table" do
     before(:each) do
       @pdf = Prawn::Document.new
       @subtable = Prawn::Table.new([["foo"]], @pdf)
-      @table = @pdf.table([[@subtable, "bar"]])
+      @table = @pdf.table([[@subtable, "bar"], ['', { content: @subtable, padding: 10 }]])
     end
 
     it "can be created from an Array" do
@@ -1280,6 +1280,9 @@ describe "Prawn::Table" do
       @table.cells[0, 0].height.should == @subtable.height
     end
 
+    it "pads the holding cell with padding options" do
+      @table.cells[1, 1].padding.should == [10, 10, 10, 10]
+    end
   end
 
   it "Prints table on one page when using subtable with colspan > 1", :unresolved, issue: 10 do
