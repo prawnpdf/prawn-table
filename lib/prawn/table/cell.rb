@@ -710,11 +710,11 @@ module Prawn
       # Draws the cell's background color.
       #
       def draw_background(pt)
-        if defined?(@background_color) && @background_color
-          @pdf.mask(:fill_color) do
-            @pdf.fill_color @background_color
-            @pdf.fill_rectangle pt, width, height
-          end
+        return unless background_color
+
+        @pdf.mask(:fill_color) do
+          @pdf.fill_color background_color
+          @pdf.fill_rectangle pt, width, height
         end
       end
 
