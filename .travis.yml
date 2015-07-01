@@ -4,9 +4,9 @@ rvm:
   - 2.1
   - 2.2
   - rbx-2
-  - jruby
+  - jruby9k
 env:
-  JRUBY_OPTS=--2.0
+  JRUBY_OPTS=--dev
 matrix:
   allow_failures:
     - rvm: rbx-2
