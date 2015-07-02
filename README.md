@@ -9,7 +9,7 @@ Status](https://secure.travis-ci.org/prawnpdf/prawn-table.png)](http://travis-ci
 Provides table support for PrawnPDF. 
 
 Originally written by Brad Ediger with community contributions, now maintained
-by Hartwig Brandl with help from the Prawn maintenance team.
+by the Prawn maintenance team.
 
 This is currently an experimental extraction, more news to come!
 
@@ -53,5 +53,5 @@ it 'illustrates my problem', :unresolved, issue: 1 do
 end
 ````
 
-This way I or anyone else fixing it will have a clearer understanding of the
+This way anyone else fixing it will have a clearer understanding of the
 problem and can be sure it's fixed.
