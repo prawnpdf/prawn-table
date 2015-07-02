@@ -1,3 +1,7 @@
+## Unreleased
+
+* Updated supported ruby versions to match Prawn. PR #47
+
 ## 0.2.1
 
 * Allow the use of Prawn `2.x`, as it should not break table behavior.
