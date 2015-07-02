@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Updated supported ruby versions to match Prawn. PR #47
+* All cells in a rowspan use the background color of the master (i.e., first) cell (#45)
 
 ## 0.2.1
 
