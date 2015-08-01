@@ -134,7 +134,11 @@ module Prawn
         # Returns the width of +text+ under the given text options.
         #
         def styled_width_of(text)
-          @pdf.width_of(text, @text_options)
+          if text.empty?
+            0
+          else
+            text.lines.collect{|line|@pdf.width_of(line, @text_options)}.max
+          end
         end
 
         private
