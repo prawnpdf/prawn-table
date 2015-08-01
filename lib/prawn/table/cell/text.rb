@@ -17,7 +17,7 @@ module Prawn
 
         TextOptions = [:inline_format, :kerning, :size, :align, :valign,
           :rotate, :rotate_around, :leading, :single_line, :skip_encoding,
-          :overflow, :min_font_size]
+          :overflow, :min_font_size, :nowrap]
 
         TextOptions.each do |option|
           define_method("#{option}=") { |v| @text_options[option] = v }
@@ -80,7 +80,7 @@ module Prawn
           # sure we have enough width to be at least one character wide. This is
           # a bit of a hack, but it should work well enough.
           unless defined?(@min_width) && @min_width
-            min_content_width = [natural_content_width, styled_width_of_single_character].min
+            min_content_width = nowrap ? natural_content_width : [natural_content_width, styled_width_of_single_character].min
             @min_width = padding_left + padding_right + min_content_width
             super
           end
