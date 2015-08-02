@@ -144,9 +144,11 @@ module Prawn
         block.arity < 1 ? instance_eval(&block) : block[self]
       end
 
-      set_column_widths
-      set_row_heights
-      position_cells
+      if !@multipage
+        set_column_widths
+        set_row_heights
+        position_cells
+      end
     end
 
     # Number of rows in the table.
@@ -170,6 +172,9 @@ module Prawn
     # this table.
     #
     attr_reader :cells
+
+    # Allow multiple pages for table or not
+    attr_writer :multipage
 
     # Specify a callback to be called before each page of cells is rendered.
     # The block is passed a Cells object containing all cells to be rendered on
@@ -290,28 +295,98 @@ module Prawn
         # page is finished.
         cells_this_page = []
 
-        @cells.each do |cell|
-          if start_new_page?(cell, offset, ref_bounds) 
-            # draw cells on the current page and then start a new one
-            # this will also add a header to the new page if a header is set
-            # reset array of cells for the new page
-            cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
+        # for multipage, track cells for all pages and then draw all
+        pages = {}
 
-            # remember the current row for background coloring
-            started_new_page_at_row = cell.row
+        if @multipage
+          # track last row and page
+          last_row = nil
+          last_page = nil
+
+          @cells.each do |cell|
+            if cell.column == 0
+              if cell.row == 0
+                # new page for new table
+                page = pages[0] = set_new_page(0)
+              else
+                # select odd page for new row
+                n = pages.size
+                page = n.even? ? pages[n - 2] : pages[n - 1]
+              end
+
+              # how is new row clear page's width
+              pages.each do |k,v|
+                pages[k]["width"] = 0 unless pages[k]["closed"]
+              end
+            else
+              # select page for not first columns
+              if last_page["width"] < self.width && !last_page["closed"]
+                page = last_page
+              else
+                n = pages.size
+
+                ((last_page["index"] + 1)...n).map do |i|
+                  page = pages[i] if !pages[i]["closed"]
+                  break if !page.nil?
+                end
+              end
+            end
+
+            if multipage_not_fits_height?(cell, page, ref_bounds, last_page,
+                                          last_row)
+              # check if row fits in page height
+              page["closed"] = true
+              i = page["index"]
+
+              (i...(pages.size + 1)).map do |n|
+                # check is even or odd as page
+                if i.even? == n.even? && n != i
+                  page = select_page(pages, n)
+                  break
+                end
+              end
+            elsif multipage_not_fits_width?(cell, page, self.width)
+              # check if row fits in page width
+              i = page["index"] + 1
+              page = select_page(pages, i)
+            end
+
+            page["width"] += cell.width
+            page["cells"] << [cell, [cell.relative_x, cell.relative_y(offset)]]
+
+            page["height"] += cell.height unless last_row == cell.row && last_page == page
+            last_row, last_page = cell.row, page
           end
 
-          # Set background color, if any.
-          cell = set_background_color(cell, started_new_page_at_row)
+          pages.each do |k, v|
+            # draw cells
+            @pdf.start_new_page unless k == 0
+            ink_and_draw_cells(pages[k]["cells"])
+          end
+        else
+          @cells.each do |cell|
+            if start_new_page?(cell, offset, ref_bounds)
+              # draw cells on the current page and then start a new one
+              # this will also add a header to the new page if a header is set
+              # reset array of cells for the new page
+              cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
 
-          # add the current cell to the cells array for the current page
-          cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
+              # remember the current row for background coloring
+              started_new_page_at_row = cell.row
+            end
+
+            # Set background color, if any.
+            cell = set_background_color(cell, started_new_page_at_row)
+
+            # add the current cell to the cells array for the current page
+            cells_this_page << [cell, [cell.relative_x, cell.relative_y(offset)]]
+          end
+
+          # Draw the last page of cells
+          ink_and_draw_cells(cells_this_page)
+
+          @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
         end
-
-        # Draw the last page of cells
-        ink_and_draw_cells(cells_this_page)
-
-        @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
       end
     end
 
@@ -410,6 +485,28 @@ module Prawn
       0
     end
 
+    def multipage_not_fits_height?(cell, page, ref_bounds, last_page, last_row)
+      (page["height"] + cell.height > ref_bounds.height) &&
+      last_page != page && last_row != cell.row
+    end
+
+    def multipage_not_fits_width?(cell, page, table_width)
+      (page["width"] + cell.width) > table_width
+    end
+
+    def set_new_page i
+      page = {}
+      page["index"] = i
+      page["cells"] = []
+      page["width"] = 0
+      page["height"] = 0
+      page["closed"] = false
+      page
+    end
+
+    def select_page obj, i
+      obj[i].nil? ? (obj[i] = set_new_page(i)) : obj[i]
+    end
     # should we start a new page? (does the current row fail to fit on this page)
     def start_new_page?(cell, offset, ref_bounds)
       # we only need to run this test on the first cell in a row
