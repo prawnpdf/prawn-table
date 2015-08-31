@@ -312,6 +312,10 @@ module Prawn
                 # select odd page for new row
                 n = pages.size
                 page = n.even? ? pages[n - 2] : pages[n - 1]
+
+                # increase height because is first column and new row
+                last_cell = page["cells"].last
+                page["height"] += last_cell[0].height
               end
 
               # how is new row clear page's width
@@ -351,10 +355,14 @@ module Prawn
               page = select_page(pages, i)
             end
 
+            # set x and y position for cell
+            cell.x = page["width"]
+            cell.y = -page["height"]
+
             page["width"] += cell.width
             page["cells"] << [cell, [cell.relative_x, cell.relative_y(offset)]]
+            page["height"] += cell.height unless not_increase_height?(last_row, last_page, cell, page)
 
-            page["height"] += cell.height unless last_row == cell.row && last_page == page
             last_row, last_page = cell.row, page
           end
 
@@ -506,6 +514,10 @@ module Prawn
 
     def select_page obj, i
       obj[i].nil? ? (obj[i] = set_new_page(i)) : obj[i]
+    end
+
+    def not_increase_height? last_row, last_page, cell, page
+      last_row.nil? || last_row == cell.row && last_page == page || cell.column == 0
     end
     # should we start a new page? (does the current row fail to fit on this page)
     def start_new_page?(cell, offset, ref_bounds)
