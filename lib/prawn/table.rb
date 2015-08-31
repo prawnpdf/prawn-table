@@ -355,13 +355,14 @@ module Prawn
               page = select_page(pages, i)
             end
 
+            page["height"] += cell.height unless not_increase_height?(last_row, last_page, cell, page)
+
             # set x and y position for cell
             cell.x = page["width"]
             cell.y = -page["height"]
 
             page["width"] += cell.width
             page["cells"] << [cell, [cell.relative_x, cell.relative_y(offset)]]
-            page["height"] += cell.height unless not_increase_height?(last_row, last_page, cell, page)
 
             last_row, last_page = cell.row, page
           end
@@ -517,8 +518,11 @@ module Prawn
     end
 
     def not_increase_height? last_row, last_page, cell, page
-      last_row.nil? || last_row == cell.row && last_page == page || cell.column == 0
+      last_row.nil? || last_row == cell.row && last_page == page ||
+      cell.column == 0 || page["cells"].size == 0 ||
+      page["cells"].last[0].row == cell.row
     end
+
     # should we start a new page? (does the current row fail to fit on this page)
     def start_new_page?(cell, offset, ref_bounds)
       # we only need to run this test on the first cell in a row
