@@ -232,10 +232,12 @@ module Prawn
       #
       #   cell.padding = 0
       #   cell.border_width = 2
+      # +skip_existing+::
+      #   Parameter for skipping general table cell style if presents local cell style
       #
       def style(options={}, &block)
         options.each do |k, v|
-          send("#{k}=", v) if respond_to?("#{k}=")
+          send("#{k}=", v) if respond_to?("#{k}=") && (!options[:skip_existing] || send(k).nil?)
         end
 
         # The block form supports running a single block for multiple cells, as
