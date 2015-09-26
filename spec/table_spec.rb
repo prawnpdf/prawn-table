@@ -988,6 +988,18 @@ describe "Prawn::Table" do
         pdf.table(data, multipage: true)
         expect(pdf.page_count).to eq(4)
       end
+
+      it "allow header with multipage" do
+        pdf = Prawn::Document.new
+        header = ["a", "b", "c"] * 10
+        data = [["foo", "bar", "baz"] * 10 ] * 35
+        data.insert(0, header)
+        pdf.table(data, multipage: true, header: true)
+        expect(pdf.page_count).to eq(4)
+
+        output = PDF::Inspector::Page.analyze(pdf.render)
+        output.pages[0][:strings][0..4].should == output.pages[2][:strings][0..4]
+      end
     end
   end
 
