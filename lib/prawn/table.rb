@@ -16,6 +16,7 @@ require_relative 'table/cell/text'
 require_relative 'table/cell/subtable'
 require_relative 'table/cell/image'
 require_relative 'table/cell/span_dummy'
+require_relative 'table/page'
 
 module Prawn
   module Errors
@@ -296,7 +297,7 @@ module Prawn
         cells_this_page = []
 
         # for multipage, track cells for all pages and then draw all
-        pages = {}
+        pages = []
 
         if @multipage
           # track last row and page
@@ -307,30 +308,31 @@ module Prawn
             if cell.column == 0
               if cell.row == 0
                 # new page for new table
-                page = pages[0] = set_new_page(0)
+                page = Page.new(0)
+                pages << page
               else
                 # select odd page for new row
-                n = pages.size
+                n = pages.length
                 page = n.even? ? pages[n - 2] : pages[n - 1]
 
                 # increase height because is first column and new row
-                last_cell = page["cells"].last
-                page["height"] += last_cell[0].height
+                last_cell = page.cells.last
+                page.height += last_cell[0].height
               end
 
               # how is new row clear page's width
-              pages.each do |k,v|
-                pages[k]["width"] = 0 unless pages[k]["closed"]
+              pages.each do |pag|
+                pag.width = 0 unless pag.closed
               end
             else
               # select page for not first columns
-              if last_page["width"] < self.width && !last_page["closed"]
+              if last_page.width < self.width && !last_page.closed
                 page = last_page
               else
-                n = pages.size
+                n = pages.length
 
-                ((last_page["index"] + 1)...n).map do |i|
-                  page = pages[i] if !pages[i]["closed"]
+                ((last_page.index + 1)...n).map do |i|
+                  page = pages[i] if !pages[i].closed
                   break if !page.nil?
                 end
               end
@@ -339,10 +341,10 @@ module Prawn
             if multipage_not_fits_height?(cell, page, ref_bounds, last_page,
                                           last_row)
               # check if row fits in page height
-              page["closed"] = true
-              i = page["index"]
+              page.closed = true
+              i = page.index
 
-              (i...(pages.size + 1)).map do |n|
+              (i...(pages.length + 1)).map do |n|
                 # check is even or odd as page
                 if i.even? == n.even? && n != i
                   page = select_page(pages, n)
@@ -351,26 +353,26 @@ module Prawn
               end
             elsif multipage_not_fits_width?(cell, page, self.width)
               # check if row fits in page width
-              i = page["index"] + 1
+              i = page.index + 1
               page = select_page(pages, i)
             end
 
-            page["height"] += cell.height unless not_increase_height?(last_row, last_page, cell, page)
+            page.height += cell.height unless not_increase_height?(last_row, last_page, cell, page)
 
             # set x and y position for cell
-            cell.x = page["width"]
-            cell.y = -page["height"]
+            cell.x = page.width
+            cell.y = -page.height
 
-            page["width"] += cell.width
-            page["cells"] << [cell, [cell.relative_x, cell.relative_y(offset)]]
+            page.width += cell.width
+            page.cells << [cell, [cell.relative_x, cell.relative_y(offset)]]
 
             last_row, last_page = cell.row, page
           end
 
-          pages.each do |k, v|
+          pages.each do |pag|
             # draw cells
-            @pdf.start_new_page unless k == 0
-            ink_and_draw_cells(pages[k]["cells"])
+            @pdf.start_new_page unless pag.index == 0
+            ink_and_draw_cells(pag.cells)
           end
         else
           @cells.each do |cell|
@@ -495,32 +497,35 @@ module Prawn
     end
 
     def multipage_not_fits_height?(cell, page, ref_bounds, last_page, last_row)
-      (page["height"] + cell.height > ref_bounds.height) &&
+      (page.height + cell.height > ref_bounds.height) &&
       last_page != page && last_row != cell.row
     end
 
     def multipage_not_fits_width?(cell, page, table_width)
-      (page["width"] + cell.width) > table_width
+      (page.width + cell.width) > table_width
     end
 
-    def set_new_page i
-      page = {}
-      page["index"] = i
-      page["cells"] = []
-      page["width"] = 0
-      page["height"] = 0
-      page["closed"] = false
-      page
-    end
+    def select_page pages, i
+      p = nil
 
-    def select_page obj, i
-      obj[i].nil? ? (obj[i] = set_new_page(i)) : obj[i]
+      pages.each do |page|
+        if page.index == i
+          p = page
+        end
+      end
+
+      if p.nil?
+        p = Page.new(i)
+        pages << p
+      end
+
+      p
     end
 
     def not_increase_height? last_row, last_page, cell, page
       last_row.nil? || last_row == cell.row && last_page == page ||
-      cell.column == 0 || page["cells"].size == 0 ||
-      page["cells"].last[0].row == cell.row
+      cell.column == 0 || page.cells.length == 0 ||
+      page.cells.last[0].row == cell.row
     end
 
     # should we start a new page? (does the current row fail to fit on this page)
