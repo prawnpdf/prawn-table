@@ -945,48 +945,52 @@ describe "Prawn::Table" do
       end
     end
 
-    describe "multipage option" do
-      it "allow render table in multiple pages based in cells width" do
-        pdf = Prawn::Document.new
-        pdf.table([["foo", "bar", "baz"]], column_widths: [300, 200, 500], multipage: true)
-        expect(pdf.page_count).to eq(2)
+    describe 'multipage option' do
+      describe 'when define width for all columns' do
+        it 'should render table without problems' do
+          pdf = Prawn::Document.new
+          pdf.table([["foo", "bar", "baz"]], column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(2)
 
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"]] * 5
-        pdf.table(data, column_widths: [300, 200, 500], multipage: true)
-        expect(pdf.page_count).to eq(2)
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 5
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(2)
 
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"]] * 20
-        pdf.table(data, column_widths: [300, 200, 500], multipage: true)
-        expect(pdf.page_count).to eq(2)
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 20
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(2)
 
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"]] * 50
-        pdf.table(data, column_widths: [300, 200, 500], multipage: true)
-        expect(pdf.page_count).to eq(4)
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 50
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(4)
 
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"]] * 150
-        pdf.table(data, column_widths: [300, 200, 500], multipage: true)
-        expect(pdf.page_count).to eq(10)
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 150
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(10)
+        end
       end
 
-      it "allow multipage table when not define widths" do
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"] * 10 ]
-        pdf.table(data, multipage: true)
-        expect(pdf.page_count).to eq(2)
+      describe 'when not define width for columns' do
+        it 'should render table' do
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"] * 10 ]
+          pdf.table(data, multipage: true)
+          expect(pdf.page_count).to eq(2)
 
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"] * 15 ]
-        pdf.table(data, multipage: true)
-        expect(pdf.page_count).to eq(3)
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"] * 15 ]
+          pdf.table(data, multipage: true)
+          expect(pdf.page_count).to eq(3)
 
-        pdf = Prawn::Document.new
-        data = [["foo", "bar", "baz"] * 25 ]
-        pdf.table(data, multipage: true)
-        expect(pdf.page_count).to eq(4)
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"] * 25 ]
+          pdf.table(data, multipage: true)
+          expect(pdf.page_count).to eq(4)
+        end
       end
 
       it "allow header with multipage" do
