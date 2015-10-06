@@ -308,7 +308,7 @@ module Prawn
             if cell.column == 0
               if cell.row == 0
                 # new page for new table
-                page = Page.new(0)
+                page = Page.new(0, @header)
                 pages << page
               else
                 # select odd page for new row
@@ -343,11 +343,13 @@ module Prawn
               # check if row fits in page height
               page.closed = true
               i = page.index
+              last_page_header = page.get_header
 
               (i...(pages.length + 1)).map do |n|
                 # check is even or odd as page
                 if i.even? == n.even? && n != i
                   page = select_page(pages, n)
+                  page.add_header(last_page_header)
                   break
                 end
               end
@@ -515,7 +517,7 @@ module Prawn
       end
 
       if p.nil?
-        p = Page.new(i)
+        p = Page.new(i, @header)
         pages << p
       end
 
