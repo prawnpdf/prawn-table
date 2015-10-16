@@ -99,7 +99,7 @@ module Prawn
   #   end
   #
   class Table
-    module Interface 
+    module Interface
       # @group Experimental API
 
       # Set up and draw a table on this document. A block can be given, which will
@@ -136,7 +136,7 @@ module Prawn
     #
     def initialize(data, document, options={}, &block)
       @pdf = document
-      @cells = make_cells(data)
+      @cells = make_cells(data, options.delete(:cell_style) || {})
       @header = false
       options.each { |k, v| send("#{k}=", v) }
 
@@ -291,7 +291,7 @@ module Prawn
         cells_this_page = []
 
         @cells.each do |cell|
-          if start_new_page?(cell, offset, ref_bounds) 
+          if start_new_page?(cell, offset, ref_bounds)
             # draw cells on the current page and then start a new one
             # this will also add a header to the new page if a header is set
             # reset array of cells for the new page
@@ -381,7 +381,7 @@ module Prawn
     end
 
     protected
-    
+
     # sets the background color (if necessary) for the given cell
     def set_background_color(cell, started_new_page_at_row)
       if defined?(@row_colors) && @row_colors && (!@header || cell.row > 0)
@@ -429,9 +429,9 @@ module Prawn
     def ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
       # don't draw only a header
       draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
-      
+
       ink_and_draw_cells(cells_this_page, draw_cells)
-      
+
       # start a new page or column
       @pdf.bounds.move_past_bottom
 
@@ -509,7 +509,7 @@ module Prawn
     # Prawn::Table::Cell, and sets up their in-table properties so that they
     # know their own position in the table.
     #
-    def make_cells(data)
+    def make_cells(data, cell_style = {})
       assert_proper_table_data(data)
 
       cells = Cells.new
@@ -523,7 +523,11 @@ module Prawn
           column_number += 1 until cells[row_number, column_number].nil?
 
           # Build the cell and store it in the Cells collection.
-          cell = Cell.make(@pdf, cell_data)
+          cell = if cell_data.is_a?(Hash)
+            Cell.make(@pdf, cell_style.merge(cell_data))
+          else
+            Cell.make(@pdf, cell_data, cell_style)
+          end
           cells[row_number, column_number] = cell
 
           # Add dummy cells for the rest of the cells in the span group. This
@@ -576,7 +580,7 @@ module Prawn
         number_of_header_rows.times do |h|
           additional_header_height = add_one_header_row(cells_this_page, x_offset, y_coord-header_height, row_number-1, h)
           header_height += additional_header_height
-        end        
+        end
       end
       header_height
     end
@@ -593,7 +597,7 @@ module Prawn
       rows_to_operate_on = @header_row.rows(row_of_header) if row_of_header
       rows_to_operate_on.each do |cell|
         cell.row = row
-        cell.dummy_cells.each {|c| 
+        cell.dummy_cells.each {|c|
           if cell.rowspan > 1
             # be sure to account for cells that span multiple rows
             # in this case you need multiple row numbers
