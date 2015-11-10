@@ -1,3 +1,7 @@
+## Master
+
+* Bugfix: Use the cell's specifed font to calculate the cell width. (Jesse Doyle, #42)
+
 ## 0.2.3
 
 * Allow padding of subtables to be configurable. PR #44
