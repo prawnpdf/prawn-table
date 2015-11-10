@@ -536,6 +536,12 @@ describe "Prawn::Table::Cell" do
       c.font.name.should == 'Helvetica-Bold'
     end
 
+    it "should use the specified font to determine font metrics" do
+      c = cell(:content => 'text', :font => 'Courier', :font_style => :bold)
+      font = @pdf.find_font('Courier-Bold')
+      c.content_width.should == font.compute_width_of("text")
+    end
+
     it "should allow style to be changed after initialize" do
       c = cell(:content => "text")
       c.font_style = :bold
