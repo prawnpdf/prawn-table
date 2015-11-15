@@ -1,3 +1,7 @@
+## Master
+
+* Bugfix: Use the cell's specified font to calculate the cell width. (Jesse Doyle, PR [#60](https://github.com/prawnpdf/prawn-table/pull/60), issue [#42](https://github.com/prawnpdf/prawn-table/issues/42))
+
 ## 0.2.3
 
 * Allow padding of subtables to be configurable. PR #44
