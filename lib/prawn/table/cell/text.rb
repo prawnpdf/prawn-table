@@ -123,10 +123,10 @@ module Prawn
             options[:document] = @pdf
 
             array = @pdf.text_formatter.format(@content, *p)
-            ::Prawn::Text::Formatted::Box.new(array,
+            ::Prawn::Table::Cell::Formatted::Box.new(array,
               options.merge(extra_options).merge(:document => @pdf))
           else
-            ::Prawn::Text::Box.new(@content, @text_options.merge(extra_options).
+            ::Prawn::Table::Cell::Box.new(@content, @text_options.merge(extra_options).
                merge(:document => @pdf))
           end
         end
