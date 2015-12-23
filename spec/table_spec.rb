@@ -271,20 +271,22 @@ describe "Prawn::Table" do
     end
 
     it "should instance_eval a 0-arg block" do
-      initializer = mock()
-      initializer.expects(:kick).once
+      initializer = double
+      expect(initializer).to receive(:kick).once
 
-      @pdf.table([["a"]]){
+      @pdf.table([["a"]]) do
         initializer.kick
-      }
+      end
     end
 
     it "should call a 1-arg block with the document as the argument" do
-      initializer = mock()
-      initializer.expects(:kick).once
+      initializer = double
+      expect(initializer).to receive(:kick).once
 
-      @pdf.table([["a"]]){ |doc|
-        expect(doc).to be_a_kind_of(Prawn::Table); initializer.kick }
+      @pdf.table([["a"]]) do |doc|
+        expect(doc).to be_a_kind_of(Prawn::Table)
+        initializer.kick
+      end
     end
 
     it "should proxy cell methods to #cells" do
@@ -688,28 +690,19 @@ describe "Prawn::Table" do
 
     describe "position" do
       it "should center tables with :position => :center" do
-        @pdf.expects(:bounding_box).with do |(x, y), opts|
-          expected = (@pdf.bounds.width - 500) / 2.0
-          (x - expected).abs < 0.001
-        end
+        expect(@pdf).to receive(:bounding_box).with([(@pdf.bounds.width - 500) / 2.0, anything], kind_of(Hash))
 
         @pdf.table([["foo"]], :column_widths => 500, :position => :center)
       end
 
       it "should right-align tables with :position => :right" do
-        @pdf.expects(:bounding_box).with do |(x, y), opts|
-          expected = @pdf.bounds.width - 500
-          (x - expected).abs < 0.001
-        end
+        expect(@pdf).to receive(:bounding_box).with([@pdf.bounds.width - 500, anything], kind_of(Hash))
 
         @pdf.table([["foo"]], :column_widths => 500, :position => :right)
       end
 
       it "should accept a Numeric" do
-        @pdf.expects(:bounding_box).with do |(x, y), opts|
-          expected = 123
-          (x - expected).abs < 0.001
-        end
+        expect(@pdf).to receive(:bounding_box).with([123, anything], kind_of(Hash))
 
         @pdf.table([["foo"]], :column_widths => 500, :position => 123)
       end
@@ -830,8 +823,6 @@ describe "Prawn::Table" do
     end
 
     it "should draw background before borders, but only within pages" do
-      seq = sequence("drawing_order")
-
       @pdf = Prawn::Document.new
 
       # give enough room for only the first row
@@ -846,16 +837,16 @@ describe "Prawn::Table" do
       cd = t.cells[1, 1]
 
       # All backgrounds should draw before any borders on page 1...
-      ca.expects(:draw_background).in_sequence(seq)
-      cb.expects(:draw_background).in_sequence(seq)
-      ca.expects(:draw_borders).in_sequence(seq)
-      cb.expects(:draw_borders).in_sequence(seq)
+      expect(ca).to receive(:draw_background).ordered
+      expect(cb).to receive(:draw_background).ordered
+      expect(ca).to receive(:draw_borders).ordered
+      expect(cb).to receive(:draw_borders).ordered
       # ...and page 2
-      @pdf.expects(:start_new_page).in_sequence(seq)
-      cc.expects(:draw_background).in_sequence(seq)
-      cd.expects(:draw_background).in_sequence(seq)
-      cc.expects(:draw_borders).in_sequence(seq)
-      cd.expects(:draw_borders).in_sequence(seq)
+      expect(@pdf).to receive(:start_new_page).ordered
+      expect(cc).to receive(:draw_background).ordered
+      expect(cd).to receive(:draw_background).ordered
+      expect(cc).to receive(:draw_borders).ordered
+      expect(cd).to receive(:draw_borders).ordered
 
       t.draw
     end
@@ -888,20 +879,23 @@ describe "Prawn::Table" do
       end
 
       it "changing cells in the callback affects their rendering" do
-        seq = sequence("render order")
-
         t = @pdf.make_table([["foo"]] * 40) do |table|
           table.before_rendering_page do |page|
             page[0, 0].background_color = "ff0000"
           end
         end
 
-        t.cells[30, 0].stubs(:draw_background).checking do |xy|
-          expect(t.cells[30, 0].background_color).to eq 'ff0000'
-        end
-        t.cells[31, 0].stubs(:draw_background).checking do |xy|
-          expect(t.cells[31, 0].background_color).to eq nil
-        end
+        expect(t.cells[30, 0]).to receive(:draw_background)
+          .and_wrap_original do |original_method, *args, &block|
+            expect(t.cells[30, 0].background_color).to eq 'ff0000'
+            original_method.call(*args, &block)
+          end
+
+        expect(t.cells[31, 0]).to receive(:draw_background)
+          .and_wrap_original do |original_method, *args, &block|
+            expect(t.cells[31, 0].background_color).to eq nil
+            original_method.call(*args, &block)
+          end
 
         t.draw
       end
@@ -926,12 +920,11 @@ describe "Prawn::Table" do
       end
 
       it "allows headers to be changed" do
-        seq = sequence("render order")
-        @pdf.expects(:draw_text!).with { |t, _| t == "hdr1"}.in_sequence(seq)
-        @pdf.expects(:draw_text!).with { |t, _| t == "foo"}.times(29).in_sequence(seq)
+        expect(@pdf).to receive(:draw_text!).with("hdr1", anything).ordered
+        expect(@pdf).to receive(:draw_text!).with("foo", anything).exactly(29).times.ordered
         # Verify that the changed cell doesn't mutate subsequent pages
-        @pdf.expects(:draw_text!).with { |t, _| t == "header"}.in_sequence(seq)
-        @pdf.expects(:draw_text!).with { |t, _| t == "foo"}.times(11).in_sequence(seq)
+        expect(@pdf).to receive(:draw_text!).with("header", anything).ordered
+        expect(@pdf).to receive(:draw_text!).with("foo", anything).exactly(11).times.ordered
 
         set_first_page_headers = false
         @pdf.table([["header"]] + [["foo"]] * 40, :header => true) do |t|
@@ -949,11 +942,11 @@ describe "Prawn::Table" do
     it "should send #style to its first argument, passing the style hash and" +
         " block" do
 
-      stylable = stub()
-      stylable.expects(:style).with(:foo => :bar).once.yields
+      stylable = double
+      expect(stylable).to receive(:style).with(:foo => :bar).once.and_yield
 
-      block = stub()
-      block.expects(:kick).once
+      block = double
+      expect(block).to receive(:kick).once
 
       Prawn::Document.new do
         table([["x"]]) { style(stylable, :foo => :bar) { block.kick } }
@@ -961,8 +954,8 @@ describe "Prawn::Table" do
     end
 
     it "should default to {} for the hash argument" do
-      stylable = stub()
-      stylable.expects(:style).with({}).once
+      stylable = double
+      expect(stylable).to receive(:style).with({}).once
 
       Prawn::Document.new do
         table([["x"]]) { style(stylable) }
@@ -1008,15 +1001,20 @@ describe "Prawn::Table" do
       # page 1: header + 67 cells (odd number -- verifies that the next
       # page disrupts the even/odd coloring, since both the last data cell
       # on this page and the first one on the next are colored cccccc)
-      Prawn::Table::Cell.expects(:draw_cells).with do |cells|
-        cells.map { |c, (x, y)| c.background_color } ==
-          [nil] + (%w[cccccc ffffff] * 33) + %w[cccccc]
-      end
+      expect(Prawn::Table::Cell).to receive(:draw_cells)
+        .and_wrap_original do |original_method, *args, &block|
+          cells = args.first
+          expect(cells.map { |c, _| c.background_color }).to eq [nil] + (%w[cccccc ffffff] * 33) + %w[cccccc]
+          original_method.call(*args, &block)
+        end
       # page 2: header and 3 data cells
-      Prawn::Table::Cell.expects(:draw_cells).with do |cells|
-        cells.map { |c, (x, y)| c.background_color } ==
-          [nil] + %w[cccccc ffffff cccccc]
-      end
+      expect(Prawn::Table::Cell).to receive(:draw_cells)
+        .and_wrap_original do |original_method, *args, &block|
+          cells = args.first
+          expect(cells.map { |c, _| c.background_color }).to eq [nil] + %w[cccccc ffffff cccccc]
+          original_method.call(*args, &block)
+        end
+
       t.draw
     end
 
@@ -1082,8 +1080,6 @@ describe "Prawn::Table" do
       # lest backgrounds overlap borders:
       # https://github.com/sandal/prawn/pull/226
 
-      seq = sequence("drawing_order")
-
       t = @pdf.make_table([["A", "B"]],
             :cell_style => {:background_color => 'ff0000'})
       ca = t.cells[0, 0]
@@ -1091,10 +1087,10 @@ describe "Prawn::Table" do
 
       # XXX Not a perfectly general test, because it would still be acceptable
       # if we drew B then A
-      ca.expects(:draw_background).in_sequence(seq)
-      cb.expects(:draw_background).in_sequence(seq)
-      ca.expects(:draw_borders).in_sequence(seq)
-      cb.expects(:draw_borders).in_sequence(seq)
+      expect(ca).to receive(:draw_background).ordered
+      expect(cb).to receive(:draw_background).ordered
+      expect(ca).to receive(:draw_borders).ordered
+      expect(cb).to receive(:draw_borders).ordered
 
       t.draw
     end
@@ -1103,9 +1099,9 @@ describe "Prawn::Table" do
       pdf = Prawn::Document.new
       t = Prawn::Table.new([["foo"]], pdf)
 
-      pdf.expects(:bounding_box).with{|(x, y), options| y.to_i == 495}.yields
-      pdf.expects(:bounding_box).with{|(x, y), options| y.to_i == 395}.yields
-      pdf.expects(:draw_text!).with{ |text, options| text == 'foo' }.twice
+      expect(pdf).to receive(:bounding_box).with([anything, 495], kind_of(Hash)).and_yield
+      expect(pdf).to receive(:bounding_box).with([anything, 395], kind_of(Hash)).and_yield
+      expect(pdf).to receive(:draw_text!).with("foo", anything).twice
 
       pdf.move_cursor_to(500)
       t.draw
@@ -1121,9 +1117,11 @@ describe "Prawn::Table" do
         text_y = pdf.y.to_i - 5 # text starts 5pt below current y pos (padding)
 
         pdf.bounding_box([0, pdf.cursor], :width => pdf.bounds.width) do
-          pdf.expects(:draw_text!).checking { |text, options|
-            expect(pdf.bounds.absolute_top).to eq text_y
-          }.times(3)
+          expect(pdf).to receive(:draw_text!).exactly(3).times
+            .and_wrap_original do |original_method, *args, &block|
+              expect(pdf.bounds.absolute_top).to eq text_y
+              original_method.call(*args, &block)
+            end
 
           pdf.table([%w[a b c]])
         end
@@ -1154,18 +1152,21 @@ describe "Prawn::Table" do
       it "draws headers at the correct position" do
         data = [["header"]] + [["foo"]] * 40
 
-        Prawn::Table::Cell.expects(:draw_cells).times(2).checking do |cells|
-          cells.each do |cell, pt|
-            if cell.content == "header"
-              # Assert that header text is drawn at the same location on each page
-              if @header_location
-                expect(pt).to eq @header_location
-              else
-                @header_location = pt
+        expect(Prawn::Table::Cell).to receive(:draw_cells).twice
+          .and_wrap_original do |original_method, *args, &block|
+            cells = args.first
+            cells.each do |cell, pt|
+              if cell.content == "header"
+                # Assert that header text is drawn at the same location on each page
+                if @header_location
+                  expect(pt).to eq @header_location
+                else
+                  @header_location = pt
+                end
               end
             end
+            original_method.call(*args, &block)
           end
-        end
         @pdf = Prawn::Document.new
         @pdf.table(data, :header => true)
       end
@@ -1173,13 +1174,16 @@ describe "Prawn::Table" do
       it "draws headers at the correct position with column box" do
         data = [["header"]] + [["foo"]] * 40
 
-        Prawn::Table::Cell.expects(:draw_cells).times(2).checking do |cells|
-          cells.each do |cell, pt|
-            if cell.content == "header"
-              expect(pt[0]).to eq @pdf.bounds.left
+        expect(Prawn::Table::Cell).to receive(:draw_cells).twice
+          .and_wrap_original do |original_method, *args, &block|
+            cells = args.first
+            cells.each do |cell, pt|
+              if cell.content == "header"
+                expect(pt[0]).to eq @pdf.bounds.left
+              end
             end
+            original_method.call(*args, &block)
           end
-        end
         @pdf = Prawn::Document.new
         @pdf.column_box [0, @pdf.cursor], :width => @pdf.bounds.width, :columns => 2 do
             @pdf.table(data, :header => true)
@@ -1217,27 +1221,32 @@ describe "Prawn::Table" do
       it "draws headers at the correct position" do
         data = [["header"]] + [["header2"]] + [["foo"]] * 40
 
-        Prawn::Table::Cell.expects(:draw_cells).times(2).checking do |cells|
-          cells.each do |cell, pt|
-            if cell.content == "header"
-              # Assert that header text is drawn at the same location on each page
-              if @header_location
-                expect(pt).to eq @header_location
-              else
-                @header_location = pt
+        expect(Prawn::Table::Cell).to receive(:draw_cells).twice
+          .and_wrap_original do |original_method, *args, &block|
+            cells = args.first
+            cells.each do |cell, pt|
+              if cell.content == "header"
+                # Assert that header text is drawn at the same location on each page
+                if @header_location
+                  expect(pt).to eq @header_location
+                else
+                  @header_location = pt
+                end
+              end
+
+              if cell.content == "header2"
+                # Assert that header text is drawn at the same location on each page
+                if @header2_location
+                  expect(pt).to eq @header2_location
+                else
+                  @header2_location = pt
+                end
               end
             end
 
-            if cell.content == "header2"
-              # Assert that header text is drawn at the same location on each page
-              if @header2_location
-                expect(pt).to eq @header2_location
-              else
-                @header2_location = pt
-              end
-            end
+            original_method.call(*args, &block)
           end
-        end
+
         @pdf = Prawn::Document.new
         @pdf.table(data, :header => 2)
       end
@@ -1411,8 +1420,8 @@ describe "colspan / rowspan" do
     t = @pdf.make_table([[{:content => "foo", :colspan => 2}]])
 
     # drawing just a dummy cell should_not ink
-    @pdf.expects(:stroke_line).never
-    @pdf.expects(:draw_text!).never
+    expect(@pdf).to_not receive(:stroke_line)
+    expect(@pdf).to_not receive(:draw_text!)
     Prawn::Table::Cell.draw_cells([t.cells[0, 1]])
   end
 
