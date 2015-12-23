@@ -27,19 +27,19 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should return a Cell" do
-      @pdf.cell(:content => "text").should be_a_kind_of Prawn::Table::Cell
+      expect(@pdf.cell(:content => "text")).to be_a_kind_of Prawn::Table::Cell
     end
 
     it "accepts :content => nil in a hash" do
-      @pdf.cell(:content => nil).should be_a_kind_of(Prawn::Table::Cell::Text)
-      @pdf.make_cell(:content => nil).should be_a_kind_of(Prawn::Table::Cell::Text)
+      expect(@pdf.cell(:content => nil)).to be_a_kind_of(Prawn::Table::Cell::Text)
+      expect(@pdf.make_cell(:content => nil)).to be_a_kind_of(Prawn::Table::Cell::Text)
     end
 
     it "should convert nil, Numeric, and Date values to strings" do
       [nil, 123, 123.45, Date.today].each do |value|
         c = @pdf.cell(:content => value)
-        c.should be_a_kind_of Prawn::Table::Cell::Text
-        c.content.should == value.to_s
+        expect(c).to be_a_kind_of Prawn::Table::Cell::Text
+        expect(c.content).to eq value.to_s
       end
     end
 
@@ -47,9 +47,9 @@ describe "Prawn::Table::Cell" do
       # used for table([[{:text => "...", :font_style => :bold, ...}, ...]])
       c = Prawn::Table::Cell.make(@pdf,
                                   {:content => 'hello', :font_style => :bold})
-      c.should be_a_kind_of Prawn::Table::Cell::Text
-      c.content.should == "hello"
-      c.font.name.should == 'Helvetica-Bold'
+      expect(c).to be_a_kind_of Prawn::Table::Cell::Text
+      expect(c.content).to eq "hello"
+      expect(c.font.name).to eq 'Helvetica-Bold'
     end
 
     it "should draw text at the given point plus padding, with the given " +
@@ -73,7 +73,7 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should return a Cell" do
-      @pdf.make_cell("text", :size => 7).should be_a_kind_of Prawn::Table::Cell
+      expect(@pdf.make_cell("text", :size => 7)).to be_a_kind_of Prawn::Table::Cell
     end
   end
 
@@ -101,17 +101,17 @@ describe "Prawn::Table::Cell" do
 
     it "should be calculated for text" do
       c = cell(:content => "text")
-      c.width.should == @pdf.width_of("text") + c.padding[1] + c.padding[3]
+      expect(c.width).to eq @pdf.width_of("text") + c.padding[1] + c.padding[3]
     end
 
     it "should be overridden by manual :width" do
       c = cell(:content => "text", :width => 400)
-      c.width.should == 400
+      expect(c.width).to eq 400
     end
 
     it "should incorporate padding when specified" do
       c = cell(:content => "text", :padding => [1, 2, 3, 4])
-      c.width.should be_within(0.01).of(@pdf.width_of("text") + 6)
+      expect(c.width).to be_within(0.01).of(@pdf.width_of("text") + 6)
     end
 
     it "should allow width to be reset after it has been calculated" do
@@ -119,31 +119,30 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text")
       c.width
       c.width = 400
-      c.width.should == 400
+      expect(c.width).to eq 400
     end
 
     it "should return proper width with size set" do
       text = "text " * 4
       c = cell(:content => text, :size => 7)
-      c.width.should ==
-        @pdf.width_of(text, :size => 7) + c.padding[1] + c.padding[3]
+      expect(c.width).to eq @pdf.width_of(text, :size => 7) + c.padding[1] + c.padding[3]
     end
 
     it "content_width should exclude padding" do
       c = cell(:content => "text", :padding => 10)
-      c.content_width.should == @pdf.width_of("text")
+      expect(c.content_width).to eq @pdf.width_of("text")
     end
 
     it "content_width should exclude padding even with manual :width" do
       c = cell(:content => "text", :padding => 10, :width => 400)
-      c.content_width.should be_within(0.01).of(380)
+      expect(c.content_width).to be_within(0.01).of(380)
     end
 
     it "should have a reasonable minimum width that can fit @content" do
       c = cell(:content => "text", :padding => 10)
       min_content_width = c.min_width - c.padding[1] - c.padding[3]
 
-      @pdf.height_of("text", :width => min_content_width).should be <
+      expect(@pdf.height_of("text", :width => min_content_width)).to be <
         (5 * @pdf.height_of("text"))
     end
 
@@ -152,14 +151,14 @@ describe "Prawn::Table::Cell" do
       c.padding = 0
 
       # Make sure we use the new value of padding in calculating min_width
-      c.min_width.should be < 100
+      expect(c.min_width).to be < 100
     end
 
     it "should defer min_width's evaluation of size" do
       c = cell(:content => "text", :size => 50)
       c.size = 8
       c.padding = 0
-      c.min_width.should be < 10
+      expect(c.min_width).to be < 10
     end
 
   end
@@ -169,19 +168,20 @@ describe "Prawn::Table::Cell" do
 
     it "should be calculated for text" do
       c = cell(:content => "text")
-      c.height.should ==
+      expect(c.height).to eq(
         @pdf.height_of("text", :width => @pdf.width_of("text")) +
         c.padding[0] + c.padding[3]
+      )
     end
 
     it "should be overridden by manual :height" do
       c = cell(:content => "text", :height => 400)
-      c.height.should == 400
+      expect(c.height).to eq 400
     end
 
     it "should incorporate :padding when specified" do
       c = cell(:content => "text", :padding => [1, 2, 3, 4])
-      c.height.should be_within(0.01).of(1 + 3 +
+      expect(c.height).to be_within(0.01).of(1 + 3 +
         @pdf.height_of("text", :width => @pdf.width_of("text")))
     end
 
@@ -190,13 +190,13 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text")
       c.height
       c.height = 400
-      c.height.should == 400
+      expect(c.height).to eq 400
     end
 
     it "should return proper height for blocks of text" do
       content = "words " * 10
       c = cell(:content => content, :width => 100)
-      c.height.should == @pdf.height_of(content, :width => 100) +
+      expect(c.height).to eq @pdf.height_of(content, :width => 100) +
         c.padding[0] + c.padding[2]
     end
 
@@ -209,17 +209,17 @@ describe "Prawn::Table::Cell" do
         correct_content_height = @pdf.height_of(content, :width => 100)
       end
 
-      c.height.should == correct_content_height + c.padding[0] + c.padding[2]
+      expect(c.height).to eq correct_content_height + c.padding[0] + c.padding[2]
     end
 
     it "content_height should exclude padding" do
       c = cell(:content => "text", :padding => 10)
-      c.content_height.should == @pdf.height_of("text")
+      expect(c.content_height).to eq @pdf.height_of("text")
     end
 
     it "content_height should exclude padding even with manual :height" do
       c = cell(:content => "text", :padding => 10, :height => 400)
-      c.content_height.should be_within(0.01).of(380)
+      expect(c.content_height).to be_within(0.01).of(380)
     end
   end
 
@@ -228,33 +228,33 @@ describe "Prawn::Table::Cell" do
 
     it "should default to zero" do
       c = cell(:content => "text")
-      c.padding.should == [5, 5, 5, 5]
+      expect(c.padding).to eq [5, 5, 5, 5]
     end
 
     it "should accept a numeric value, setting all padding" do
       c = cell(:content => "text", :padding => 10)
-      c.padding.should == [10, 10, 10, 10]
+      expect(c.padding).to eq [10, 10, 10, 10]
     end
 
     it "should accept [v,h]" do
       c = cell(:content => "text", :padding => [20, 30])
-      c.padding.should == [20, 30, 20, 30]
+      expect(c.padding).to eq [20, 30, 20, 30]
     end
 
     it "should accept [t,h,b]" do
       c = cell(:content => "text", :padding => [10, 20, 30])
-      c.padding.should == [10, 20, 30, 20]
+      expect(c.padding).to eq [10, 20, 30, 20]
     end
 
     it "should accept [t,l,b,r]" do
       c = cell(:content => "text", :padding => [10, 20, 30, 40])
-      c.padding.should == [10, 20, 30, 40]
+      expect(c.padding).to eq [10, 20, 30, 40]
     end
 
     it "should reject other formats" do
-      lambda{
+      expect {
         cell(:content => "text", :padding => [10])
-      }.should raise_error(ArgumentError)
+      }.to raise_error(ArgumentError)
     end
   end
 
@@ -268,10 +268,10 @@ describe "Prawn::Table::Cell" do
       @pdf.stubs(:fill_color)
       @pdf.expects(:fill_color).with('123456')
       @pdf.expects(:fill_rectangle).checking do |(x, y), w, h|
-        x.should be_within(0.01).of(0)
-        y.should be_within(0.01).of(@pdf.cursor)
-        w.should be_within(0.01).of(29.344)
-        h.should be_within(0.01).of(23.872)
+        expect(x).to be_within(0.01).of(0)
+        expect(y).to be_within(0.01).of(@pdf.cursor)
+        expect(w).to be_within(0.01).of(29.344)
+        expect(h).to be_within(0.01).of(23.872)
       end
       @pdf.cell(:content => "text", :background_color => '123456')
     end
@@ -284,10 +284,10 @@ describe "Prawn::Table::Cell" do
       @pdf.stubs(:fill_color)
       @pdf.expects(:fill_color).with('123456')
       @pdf.expects(:fill_rectangle).checking do |(x, y), w, h|
-        x.should be_within(0.01).of(12.0)
-        y.should be_within(0.01).of(34.0)
-        w.should be_within(0.01).of(29.344)
-        h.should be_within(0.01).of(23.872)
+        expect(x).to be_within(0.01).of(12.0)
+        expect(y).to be_within(0.01).of(34.0)
+        expect(w).to be_within(0.01).of(29.344)
+        expect(h).to be_within(0.01).of(23.872)
       end
       c = @pdf.make_cell(:content => "text", :background_color => '123456')
       c.draw([12.0, 34.0])
@@ -306,7 +306,7 @@ describe "Prawn::Table::Cell" do
       pdf = Prawn::Document.new
       pdf.fill_color = '333333'
       pdf.cell :content => 'foo', :text_color => '555555'
-      pdf.fill_color.should == '333333'
+      expect(pdf.fill_color).to eq '333333'
     end
   end
 
@@ -326,40 +326,40 @@ describe "Prawn::Table::Cell" do
     # wrong.
     it "should draw top border when requested" do
       @pdf.expects(:stroke_line).checking do |from, to|
-        @pdf.map_to_absolute(from).map{|x| x.round}.should == [36, 756]
-        @pdf.map_to_absolute(to).map{|x| x.round}.should == [65, 756]
+        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
+        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 756]
       end
       @pdf.cell(:content => "text", :borders => [:top])
     end
 
     it "should draw bottom border when requested" do
       @pdf.expects(:stroke_line).checking do |from, to|
-        @pdf.map_to_absolute(from).map{|x| x.round}.should == [36, 732]
-        @pdf.map_to_absolute(to).map{|x| x.round}.should == [65, 732]
+        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 732]
+        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 732]
       end
       @pdf.cell(:content => "text", :borders => [:bottom])
     end
 
     it "should draw left border when requested" do
       @pdf.expects(:stroke_line).checking do |from, to|
-        @pdf.map_to_absolute(from).map{|x| x.round}.should == [36, 756]
-        @pdf.map_to_absolute(to).map{|x| x.round}.should == [36, 732]
+        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
+        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [36, 732]
       end
       @pdf.cell(:content => "text", :borders => [:left])
     end
 
     it "should draw right border when requested" do
       @pdf.expects(:stroke_line).checking do |from, to|
-        @pdf.map_to_absolute(from).map{|x| x.round}.should == [65, 756]
-        @pdf.map_to_absolute(to).map{|x| x.round}.should == [65, 732]
+        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [65, 756]
+        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 732]
       end
       @pdf.cell(:content => "text", :borders => [:right])
     end
 
     it "should draw borders at the same location when in or out of bbox" do
       @pdf.expects(:stroke_line).checking do |from, to|
-        @pdf.map_to_absolute(from).map{|x| x.round}.should == [36, 756]
-        @pdf.map_to_absolute(to).map{|x| x.round}.should == [65, 756]
+        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
+        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 756]
       end
       @pdf.bounding_box([0, @pdf.cursor], :width => @pdf.bounds.width) do
         @pdf.cell(:content => "text", :borders => [:top])
@@ -371,8 +371,8 @@ describe "Prawn::Table::Cell" do
       @pdf.expects(:stroke_color=).with("ff0000")
 
       c = @pdf.cell(:content => "text", :border_top_color => "ff0000")
-      c.border_top_color.should == "ff0000"
-      c.border_colors[0].should == "ff0000"
+      expect(c.border_top_color).to eq "ff0000"
+      expect(c.border_colors[0]).to eq "ff0000"
     end
 
     it "should set border colors with :border_color" do
@@ -385,12 +385,12 @@ describe "Prawn::Table::Cell" do
       c = @pdf.cell(:content => "text",
         :border_color => %w[ff0000 00ff00 0000ff ff00ff])
 
-      c.border_colors.should == %w[ff0000 00ff00 0000ff ff00ff]
+      expect(c.border_colors).to eq %w[ff0000 00ff00 0000ff ff00ff]
     end
 
     it "border_..._width should return 0 if border not selected" do
       c = @pdf.cell(:content => "text", :borders => [:top])
-      c.border_bottom_width.should == 0
+      expect(c.border_bottom_width).to eq 0
     end
 
     it "should set border width with :border_..._width" do
@@ -398,8 +398,8 @@ describe "Prawn::Table::Cell" do
       @pdf.expects(:line_width=).with(2)
 
       c = @pdf.cell(:content => "text", :border_bottom_width => 2)
-      c.border_bottom_width.should == 2
-      c.border_widths[2].should == 2
+      expect(c.border_bottom_width).to eq 2
+      expect(c.border_widths[2]).to eq 2
     end
 
     it "should set border widths with :border_width" do
@@ -411,28 +411,28 @@ describe "Prawn::Table::Cell" do
 
       c = @pdf.cell(:content => "text",
         :border_width => [2, 3, 4, 5])
-      c.border_widths.should == [2, 3, 4, 5]
+      expect(c.border_widths).to eq [2, 3, 4, 5]
     end
 
     it "should set default border lines to :solid" do
       c = @pdf.cell(:content => "text")
-      c.border_top_line.should == :solid
-      c.border_right_line.should == :solid
-      c.border_bottom_line.should == :solid
-      c.border_left_line.should == :solid
-      c.border_lines.should == [:solid] * 4
+      expect(c.border_top_line).to eq :solid
+      expect(c.border_right_line).to eq :solid
+      expect(c.border_bottom_line).to eq :solid
+      expect(c.border_left_line).to eq :solid
+      expect(c.border_lines).to eq [:solid] * 4
     end
 
     it "should set border line with :border_..._line" do
       c = @pdf.cell(:content => "text", :border_bottom_line => :dotted)
-      c.border_bottom_line.should == :dotted
-      c.border_lines[2].should == :dotted
+      expect(c.border_bottom_line).to eq :dotted
+      expect(c.border_lines[2]).to eq :dotted
     end
 
     it "should set border lines with :border_lines" do
       c = @pdf.cell(:content => "text",
         :border_lines => [:solid, :dotted, :dashed, :solid])
-      c.border_lines.should == [:solid, :dotted, :dashed, :solid]
+      expect(c.border_lines).to eq [:solid, :dotted, :dashed, :solid]
     end
   end
 
@@ -450,8 +450,8 @@ describe "Prawn::Table::Cell" do
       box = Prawn::Text::Box.new("text", :document => @pdf)
 
       Prawn::Text::Box.expects(:new).checking do |text, options|
-        text.should == "text"
-        options[:align].should == :right
+        expect(text).to eq "text"
+        expect(options[:align]).to eq :right
       end.at_least_once.returns(box)
 
       c.draw
@@ -463,8 +463,8 @@ describe "Prawn::Table::Cell" do
       box = Prawn::Text::Box.new("text", :document => @pdf)
 
       Prawn::Text::Box.expects(:new).checking do |text, options|
-        text.should == "text"
-        options[:style].should == :bold
+        expect(text).to eq "text"
+        expect(options[:style]).to eq :bold
       end.at_least_once.returns(box)
 
       c.draw
@@ -477,9 +477,9 @@ describe "Prawn::Table::Cell" do
 
       box = Prawn::Text::Box.new("text", :document => @pdf)
       Prawn::Text::Box.expects(:new).checking do |text, options|
-        text.should == "text"
-        options[:style].should == :bold
-        @pdf.font.family.should == 'Courier'
+        expect(text).to eq "text"
+        expect(options[:style]).to eq :bold
+        expect(@pdf.font.family).to eq 'Courier'
       end.at_least_once.returns(box)
 
       c.draw
@@ -493,9 +493,9 @@ describe "Prawn::Table::Cell" do
 
       box = Prawn::Text::Box.new("text", :document => @pdf)
       Prawn::Text::Box.expects(:new).checking do |text, options|
-        text.should == "text"
-        @pdf.font.family.should == 'Courier'
-        @pdf.font.options[:style].should == :bold
+        expect(text).to eq "text"
+        expect(@pdf.font.family).to eq 'Courier'
+        expect(@pdf.font.options[:style]).to eq :bold
       end.at_least_once.returns(box)
 
       c.draw
@@ -507,14 +507,14 @@ describe "Prawn::Table::Cell" do
       box = Prawn::Text::Formatted::Box.new([], :document => @pdf)
 
       Prawn::Text::Formatted::Box.expects(:new).checking do |array, options|
-        array[0][:text].should == "foo "
-        array[0][:styles].should == []
+        expect(array[0][:text]).to eq "foo "
+        expect(array[0][:styles]).to eq []
 
-        array[1][:text].should == "bar"
-        array[1][:styles].should == [:bold]
+        expect(array[1][:text]).to eq "bar"
+        expect(array[1][:styles]).to eq [:bold]
 
-        array[2][:text].should == " baz"
-        array[2][:styles].should == []
+        expect(array[2][:text]).to eq " baz"
+        expect(array[2][:styles]).to eq []
       end.at_least_once.returns(box)
 
       c.draw
@@ -528,42 +528,42 @@ describe "Prawn::Table::Cell" do
     it "should allow only :font_style to be specified, defaulting to the " +
        "document's font" do
       c = cell(:content => "text", :font_style => :bold)
-      c.font.name.should == 'Helvetica-Bold'
+      expect(c.font.name).to eq 'Helvetica-Bold'
     end
 
     it "should accept a font name for :font" do
       c = cell(:content => "text", :font => 'Helvetica-Bold')
-      c.font.name.should == 'Helvetica-Bold'
+      expect(c.font.name).to eq 'Helvetica-Bold'
     end
 
     it "should use the specified font to determine font metrics" do
       c = cell(:content => 'text', :font => 'Courier', :font_style => :bold)
       font = @pdf.find_font('Courier-Bold')
-      c.content_width.should == font.compute_width_of("text")
+      expect(c.content_width).to eq font.compute_width_of("text")
     end
 
     it "should allow style to be changed after initialize" do
       c = cell(:content => "text")
       c.font_style = :bold
-      c.font.name.should == 'Helvetica-Bold'
+      expect(c.font.name).to eq 'Helvetica-Bold'
     end
 
     it "should default to the document's font, if none is specified" do
       c = cell(:content => "text")
-      c.font.should == @pdf.font
+      expect(c.font).to eq @pdf.font
     end
 
     it "should use the metrics of the selected font (even if it is a variant " +
        "of the document's font) to calculate width" do
       c = cell(:content => "text", :font_style => :bold)
       font = @pdf.find_font('Helvetica-Bold')
-      c.content_width.should == font.compute_width_of("text")
+      expect(c.content_width).to eq font.compute_width_of("text")
     end
 
     it "should properly calculate inline-formatted text" do
       c = cell(:content => "<b>text</b>", :inline_format => true)
       font = @pdf.find_font('Helvetica-Bold')
-      c.content_width.should == font.compute_width_of("text")
+      expect(c.content_width).to eq font.compute_width_of("text")
     end
   end
 end
@@ -580,12 +580,12 @@ describe "Image cells" do
     end
 
     it "should create a Cell::Image" do
-      @cell.should be_a_kind_of(Prawn::Table::Cell::Image)
+      expect(@cell).to be_a_kind_of(Prawn::Table::Cell::Image)
     end
 
     it "should pull the natural width and height from the image" do
-      @cell.natural_content_width.should == 141
-      @cell.natural_content_height.should == 142
+      expect(@cell.natural_content_width).to eq 141
+      expect(@cell.natural_content_height).to eq 142
     end
   end
 
@@ -605,17 +605,17 @@ describe "Image cells" do
 
 
     it "should create a Cell::Image" do
-      @cell.should be_a_kind_of(Prawn::Table::Cell::Image)
+      expect(@cell).to be_a_kind_of(Prawn::Table::Cell::Image)
     end
 
     it "should pass through image options" do
       @pdf.expects(:embed_image).checking do |_, _, options|
-        options[:scale].should == 2
-        options[:fit].should == [100, 200]
-        options[:width].should == 123
-        options[:height].should == 456
-        options[:position].should == :center
-        options[:vposition].should == :center
+        expect(options[:scale]).to eq 2
+        expect(options[:fit]).to eq [100, 200]
+        expect(options[:width]).to eq 123
+        expect(options[:height]).to eq 456
+        expect(options[:position]).to eq :center
+        expect(options[:vposition]).to eq :center
       end
 
       @table.draw

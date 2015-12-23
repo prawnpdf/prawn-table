@@ -17,10 +17,10 @@ describe "Prawn::Table::Cell::SpanDummy" do
   end
 
   it "colspan dummy delegates background_color to the master cell" do
-    @colspan_dummy.background_color.should == @colspan_master.background_color
+    expect(@colspan_dummy.background_color).to eq @colspan_master.background_color
   end
 
   it "rowspan dummy delegates background_color to the master cell" do
-    @rowspan_dummy.background_color.should == @rowspan_master.background_color
+    expect(@rowspan_dummy.background_color).to eq @rowspan_master.background_color
   end
 end
