@@ -22,7 +22,7 @@ describe "Prawn::Table::Cell" do
     include CellHelpers
 
     it "should draw the cell" do
-      Prawn::Table::Cell::Text.any_instance.expects(:draw).once
+      expect_any_instance_of(Prawn::Table::Cell::Text).to receive(:draw).once
       @pdf.cell(:content => "text")
     end
 
@@ -54,9 +54,9 @@ describe "Prawn::Table::Cell" do
 
     it "should draw text at the given point plus padding, with the given " +
        "size and style" do
-      @pdf.expects(:bounding_box).yields
-      @pdf.expects(:move_down)
-      @pdf.expects(:draw_text!).with { |text, options| text == "hello world" }
+      expect(@pdf).to receive(:bounding_box).and_yield
+      expect(@pdf).to receive(:move_down)
+      expect(@pdf).to receive(:draw_text!).with("hello world", anything)
 
       @pdf.cell(:content => "hello world",
                 :at => [10, 20],
@@ -68,7 +68,7 @@ describe "Prawn::Table::Cell" do
 
   describe "Prawn::Document#make_cell" do
     it "should not draw the cell" do
-      Prawn::Table::Cell::Text.any_instance.expects(:draw).never
+      expect_any_instance_of(Prawn::Table::Cell::Text).to_not receive(:draw)
       @pdf.make_cell("text")
     end
 
@@ -83,8 +83,8 @@ describe "Prawn::Table::Cell" do
     it "should set each property in turn" do
       c = cell(:content => "text")
 
-      c.expects(:padding=).with(50)
-      c.expects(:size=).with(7)
+      expect(c).to receive(:padding=).with(50)
+      expect(c).to receive(:size=).with(7)
 
       c.style(:padding => 50, :size => 7)
     end
@@ -262,33 +262,29 @@ describe "Prawn::Table::Cell" do
     include CellHelpers
 
     it "should fill a rectangle with the given background color" do
-      @pdf.stubs(:mask).yields
-      @pdf.expects(:mask).with(:fill_color).yields
+      allow(@pdf).to receive(:mask).and_yield
+      expect(@pdf).to receive(:mask).with(:fill_color).and_yield
 
-      @pdf.stubs(:fill_color)
-      @pdf.expects(:fill_color).with('123456')
-      @pdf.expects(:fill_rectangle).checking do |(x, y), w, h|
-        expect(x).to be_within(0.01).of(0)
-        expect(y).to be_within(0.01).of(@pdf.cursor)
-        expect(w).to be_within(0.01).of(29.344)
-        expect(h).to be_within(0.01).of(23.872)
-      end
+      allow(@pdf).to receive(:fill_color)
+      expect(@pdf).to receive(:fill_color).with('123456')
+      expect(@pdf).to receive(:fill_rectangle).with([0, @pdf.cursor], 29.344, 23.872)
       @pdf.cell(:content => "text", :background_color => '123456')
     end
 
     it "should draw the background in the right place if cell is drawn at a " +
        "different location" do
-      @pdf.stubs(:mask).yields
-      @pdf.expects(:mask).with(:fill_color).yields
+      allow(@pdf).to receive(:mask).and_yield
+      expect(@pdf).to receive(:mask).with(:fill_color).and_yield
 
-      @pdf.stubs(:fill_color)
-      @pdf.expects(:fill_color).with('123456')
-      @pdf.expects(:fill_rectangle).checking do |(x, y), w, h|
-        expect(x).to be_within(0.01).of(12.0)
-        expect(y).to be_within(0.01).of(34.0)
-        expect(w).to be_within(0.01).of(29.344)
-        expect(h).to be_within(0.01).of(23.872)
-      end
+      allow(@pdf).to receive(:fill_color)
+      expect(@pdf).to receive(:fill_color).with('123456')
+      expect(@pdf).to receive(:fill_rectangle).with([12.0, 34.0], 29.344, 23.872)
+      #  .checking do |(x, y), w, h|
+      #  expect(x).to be_within(0.01).of(12.0)
+      #  expect(y).to be_within(0.01).of(34.0)
+      #  expect(w).to be_within(0.01).of(29.344)
+      #  expect(h).to be_within(0.01).of(23.872)
+      #end
       c = @pdf.make_cell(:content => "text", :background_color => '123456')
       c.draw([12.0, 34.0])
     end
@@ -297,8 +293,8 @@ describe "Prawn::Table::Cell" do
   describe "color" do
     it "should set fill color when :text_color is provided" do
       pdf = Prawn::Document.new
-      pdf.stubs(:fill_color)
-      pdf.expects(:fill_color).with('555555')
+      allow(pdf).to receive(:fill_color)
+      expect(pdf).to receive(:fill_color).with('555555')
       pdf.cell :content => 'foo', :text_color => '555555'
     end
 
@@ -312,12 +308,12 @@ describe "Prawn::Table::Cell" do
 
   describe "Borders" do
     it "should draw all borders by default" do
-      @pdf.expects(:stroke_line).times(4)
+      expect(@pdf).to receive(:stroke_line).exactly(4).times
       @pdf.cell(:content => "text")
     end
 
     it "should draw all borders when requested" do
-      @pdf.expects(:stroke_line).times(4)
+      expect(@pdf).to receive(:stroke_line).exactly(4).times
       @pdf.cell(:content => "text", :borders => [:top, :right, :bottom, :left])
     end
 
@@ -325,50 +321,70 @@ describe "Prawn::Table::Cell" do
     # do any FP closeness arithmetic. Can plug in that math later if this goes
     # wrong.
     it "should draw top border when requested" do
-      @pdf.expects(:stroke_line).checking do |from, to|
-        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
-        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 756]
-      end
+      expect(@pdf).to receive(:stroke_line)
+        .and_wrap_original do |original_method, *args, &block|
+          from, to, = args
+          expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
+          expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 756]
+
+          original_method.call(*args, &block)
+        end
       @pdf.cell(:content => "text", :borders => [:top])
     end
 
     it "should draw bottom border when requested" do
-      @pdf.expects(:stroke_line).checking do |from, to|
-        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 732]
-        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 732]
-      end
+      expect(@pdf).to receive(:stroke_line)
+        .and_wrap_original do |original_method, *args, &block|
+          from, to, = args
+          expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 732]
+          expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 732]
+
+          original_method.call(*args, &block)
+        end
       @pdf.cell(:content => "text", :borders => [:bottom])
     end
 
     it "should draw left border when requested" do
-      @pdf.expects(:stroke_line).checking do |from, to|
-        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
-        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [36, 732]
-      end
+      expect(@pdf).to receive(:stroke_line)
+        .and_wrap_original do |original_method, *args, &block|
+          from, to, = args
+          expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
+          expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [36, 732]
+
+          original_method.call(*args, &block)
+        end
       @pdf.cell(:content => "text", :borders => [:left])
     end
 
     it "should draw right border when requested" do
-      @pdf.expects(:stroke_line).checking do |from, to|
-        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [65, 756]
-        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 732]
-      end
+      expect(@pdf).to receive(:stroke_line)
+        .and_wrap_original do |original_method, *args, &block|
+          from, to, = args
+          expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [65, 756]
+          expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 732]
+
+          original_method.call(*args, &block)
+        end
       @pdf.cell(:content => "text", :borders => [:right])
     end
 
     it "should draw borders at the same location when in or out of bbox" do
-      @pdf.expects(:stroke_line).checking do |from, to|
-        expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
-        expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 756]
-      end
+      expect(@pdf).to receive(:stroke_line)
+        .and_wrap_original do |original_method, *args, &block|
+          from, to, = args
+          expect(@pdf.map_to_absolute(from).map{|x| x.round}).to eq [36, 756]
+          expect(@pdf.map_to_absolute(to).map{|x| x.round}).to eq [65, 756]
+
+          original_method.call(*args, &block)
+        end
       @pdf.bounding_box([0, @pdf.cursor], :width => @pdf.bounds.width) do
         @pdf.cell(:content => "text", :borders => [:top])
       end
     end
 
     it "should set border color with :border_..._color" do
-      @pdf.ignores(:stroke_color=).with("000000")
-      @pdf.expects(:stroke_color=).with("ff0000")
+      allow(@pdf).to receive(:stroke_color=).with("000000")
+      expect(@pdf).to receive(:stroke_color=).with("ff0000")
 
       c = @pdf.cell(:content => "text", :border_top_color => "ff0000")
       expect(c.border_top_color).to eq "ff0000"
@@ -376,11 +392,11 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should set border colors with :border_color" do
-      @pdf.ignores(:stroke_color=).with("000000")
-      @pdf.expects(:stroke_color=).with("ff0000")
-      @pdf.expects(:stroke_color=).with("00ff00")
-      @pdf.expects(:stroke_color=).with("0000ff")
-      @pdf.expects(:stroke_color=).with("ff00ff")
+      allow(@pdf).to receive(:stroke_color=).with("000000")
+      expect(@pdf).to receive(:stroke_color=).with("ff0000")
+      expect(@pdf).to receive(:stroke_color=).with("00ff00")
+      expect(@pdf).to receive(:stroke_color=).with("0000ff")
+      expect(@pdf).to receive(:stroke_color=).with("ff00ff")
 
       c = @pdf.cell(:content => "text",
         :border_color => %w[ff0000 00ff00 0000ff ff00ff])
@@ -394,8 +410,8 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should set border width with :border_..._width" do
-      @pdf.ignores(:line_width=).with(1)
-      @pdf.expects(:line_width=).with(2)
+      allow(@pdf).to receive(:line_width=).with(1)
+      expect(@pdf).to receive(:line_width=).with(2)
 
       c = @pdf.cell(:content => "text", :border_bottom_width => 2)
       expect(c.border_bottom_width).to eq 2
@@ -403,11 +419,11 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should set border widths with :border_width" do
-      @pdf.ignores(:line_width=).with(1)
-      @pdf.expects(:line_width=).with(2)
-      @pdf.expects(:line_width=).with(3)
-      @pdf.expects(:line_width=).with(4)
-      @pdf.expects(:line_width=).with(5)
+      allow(@pdf).to receive(:line_width=).with(1)
+      expect(@pdf).to receive(:line_width=).with(2)
+      expect(@pdf).to receive(:line_width=).with(3)
+      expect(@pdf).to receive(:line_width=).with(4)
+      expect(@pdf).to receive(:line_width=).with(5)
 
       c = @pdf.cell(:content => "text",
         :border_width => [2, 3, 4, 5])
@@ -449,10 +465,8 @@ describe "Prawn::Table::Cell" do
 
       box = Prawn::Text::Box.new("text", :document => @pdf)
 
-      Prawn::Text::Box.expects(:new).checking do |text, options|
-        expect(text).to eq "text"
-        expect(options[:align]).to eq :right
-      end.at_least_once.returns(box)
+      expect(Prawn::Text::Box).to receive(:new).with("text", hash_including(align: :right))
+        .at_least(:once).and_return(box)
 
       c.draw
     end
@@ -462,10 +476,8 @@ describe "Prawn::Table::Cell" do
 
       box = Prawn::Text::Box.new("text", :document => @pdf)
 
-      Prawn::Text::Box.expects(:new).checking do |text, options|
-        expect(text).to eq "text"
-        expect(options[:style]).to eq :bold
-      end.at_least_once.returns(box)
+      expect(Prawn::Text::Box).to receive(:new).with("text", hash_including(style: :bold))
+        .at_least(:once).and_return(box)
 
       c.draw
     end
@@ -476,11 +488,14 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text", :font_style => :bold)
 
       box = Prawn::Text::Box.new("text", :document => @pdf)
-      Prawn::Text::Box.expects(:new).checking do |text, options|
-        expect(text).to eq "text"
-        expect(options[:style]).to eq :bold
-        expect(@pdf.font.family).to eq 'Courier'
-      end.at_least_once.returns(box)
+      expect(Prawn::Text::Box).to receive(:new)
+        .and_wrap_original do |original_method, *args, &block|
+          text, options, = args
+          expect(text).to eq "text"
+          expect(options[:style]).to eq :bold
+          expect(@pdf.font.family).to eq 'Courier'
+          box
+        end.at_least(:once)
 
       c.draw
     end
@@ -492,11 +507,14 @@ describe "Prawn::Table::Cell" do
       c = cell(:content => "text")
 
       box = Prawn::Text::Box.new("text", :document => @pdf)
-      Prawn::Text::Box.expects(:new).checking do |text, options|
-        expect(text).to eq "text"
-        expect(@pdf.font.family).to eq 'Courier'
-        expect(@pdf.font.options[:style]).to eq :bold
-      end.at_least_once.returns(box)
+      expect(Prawn::Text::Box).to receive(:new)
+        .and_wrap_original do |original_method, *args, &block|
+          text = args.first
+          expect(text).to eq "text"
+          expect(@pdf.font.family).to eq 'Courier'
+          expect(@pdf.font.options[:style]).to eq :bold
+          box
+        end.at_least(:once)
 
       c.draw
     end
@@ -506,16 +524,14 @@ describe "Prawn::Table::Cell" do
 
       box = Prawn::Text::Formatted::Box.new([], :document => @pdf)
 
-      Prawn::Text::Formatted::Box.expects(:new).checking do |array, options|
-        expect(array[0][:text]).to eq "foo "
-        expect(array[0][:styles]).to eq []
-
-        expect(array[1][:text]).to eq "bar"
-        expect(array[1][:styles]).to eq [:bold]
-
-        expect(array[2][:text]).to eq " baz"
-        expect(array[2][:styles]).to eq []
-      end.at_least_once.returns(box)
+      expect(Prawn::Text::Formatted::Box).to receive(:new).with(
+        [
+          hash_including(text: "foo ", styles: []),
+          hash_including(text: "bar", styles: [:bold]),
+          hash_including(text: " baz", styles: [])
+        ],
+        kind_of(Hash)
+      ).at_least(:once).and_return(box)
 
       c.draw
     end
@@ -609,14 +625,17 @@ describe "Image cells" do
     end
 
     it "should pass through image options" do
-      @pdf.expects(:embed_image).checking do |_, _, options|
-        expect(options[:scale]).to eq 2
-        expect(options[:fit]).to eq [100, 200]
-        expect(options[:width]).to eq 123
-        expect(options[:height]).to eq 456
-        expect(options[:position]).to eq :center
-        expect(options[:vposition]).to eq :center
-      end
+      expect(@pdf).to receive(:embed_image).with(
+        anything, anything,
+        hash_including(
+          scale: 2,
+          fit: [100, 200],
+          width: 123,
+          height: 456,
+          position: :center,
+          vposition: :center
+        )
+      )
 
       @table.draw
     end

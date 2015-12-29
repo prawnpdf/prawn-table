@@ -17,7 +17,6 @@ require_relative "../lib/prawn/table"
 Prawn.debug = true
 
 require "rspec"
-require "mocha/api"
 require "pdf/reader"
 require "pdf/inspector"
 
@@ -26,7 +25,6 @@ require "pdf/inspector"
 Dir[File.dirname(__FILE__) + "/extensions/**/*.rb"].each {|f| require f }
 
 RSpec.configure do |config|
-  config.mock_framework = :mocha
   config.include EncodingHelpers
 end
 
