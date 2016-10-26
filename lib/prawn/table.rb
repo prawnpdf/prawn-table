@@ -137,7 +137,7 @@ module Prawn
     def initialize(data, document, options={}, &block)
       @pdf = document
       @cells = make_cells(data)
-      @header = false
+      @header = true
       options.each { |k, v| send("#{k}=", v) }
 
       if block
@@ -479,8 +479,8 @@ module Prawn
 
       # If there isn't enough room left on the page to fit the first data row
       # (including the header), start the table on the next page.
-      @pdf.bounds.move_past_bottom
-
+      #@pdf.bounds.move_past_bottom
+      move_past_bottom
       # we are at the top of a new page
       0
     end
@@ -693,6 +693,10 @@ module Prawn
       end
 
       @pdf.y = final_y
+    end
+
+    def move_past_bottom
+      @pdf.start_new_page(:top_margin => 120, :bottom_margin => 90)
     end
 
   end
