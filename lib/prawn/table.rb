@@ -433,7 +433,7 @@ module Prawn
       ink_and_draw_cells(cells_this_page, draw_cells)
       
       # start a new page or column
-      @pdf.bounds.move_past_bottom
+      move_past_bottom
 
       offset = (@pdf.y - cell.y)
 
