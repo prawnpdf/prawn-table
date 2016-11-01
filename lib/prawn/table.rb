@@ -137,7 +137,7 @@ module Prawn
     def initialize(data, document, options={}, &block)
       @pdf = document
       @cells = make_cells(data)
-      @header = true
+      @header = options[:header].present? ? options[:header] : true
       options.each { |k, v| send("#{k}=", v) }
 
       if block
