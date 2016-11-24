@@ -696,7 +696,7 @@ module Prawn
     end
 
     def move_past_bottom
-      @pdf.start_new_page(:top_margin => 120, :bottom_margin => 90)
+      @pdf.start_new_page(:top_margin => 135, :bottom_margin => 90)
     end
 
   end
