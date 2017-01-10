@@ -135,6 +135,7 @@ module Prawn
     #   above for details on available options.
     #
     def initialize(data, document, options={}, &block)
+      @initializing = true
       @pdf = document
       @cells = make_cells(data)
       @header = false
@@ -147,6 +148,8 @@ module Prawn
       set_column_widths
       set_row_heights
       position_cells
+      
+      @initializing = false
     end
 
     # Number of rows in the table.
@@ -232,7 +235,8 @@ module Prawn
     #   pdf.table(data, :cell_style => { :borders => [:left, :right] })
     #
     def cell_style=(style_hash)
-      cells.style(style_hash)
+      # skip applying table cell style on initialization
+      cells.style(style_hash.merge skip_existing: @initializing)
     end
 
     # Allows generic stylable content. This is an alternate syntax that some
