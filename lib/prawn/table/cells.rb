@@ -175,6 +175,20 @@ module Prawn
         aggregate_cell_values(:column, :max_width_ignoring_span, :max)
       end
 
+      def recalculate_height
+        each do |cell|
+          cell.recalculate_height_ignoring_span
+        end
+        height
+      end
+
+      # reduce the y value in all cells by a given amount
+      def reduce_y(amount)
+        each do |cell|
+          cell.y -= amount
+        end
+      end
+
       # Returns the total height of all rows in the selected set.
       #
       def height

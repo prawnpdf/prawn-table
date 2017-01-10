@@ -55,6 +55,7 @@ module Prawn
         # preset width.
         #
         def natural_content_height
+          return 0 if content.nil?
           with_font do
             b = text_box(:width => spanned_content_width + FPTolerance)
             b.render(:dry_run => true)

@@ -56,6 +56,13 @@ module Prawn
       #
       attr_reader :padding
 
+      # content for the second cell of a cell that has been split (the one on the new page)
+      attr_writer :content_new_page
+
+      def content_new_page
+        @content_new_page || ''
+      end
+
       # If provided, the minimum width that this cell in its column will permit.
       #
       def min_width_ignoring_span
@@ -110,7 +117,9 @@ module Prawn
 
       # Manually specify the cell's height.
       #
-      attr_writer :height
+      attr_accessor :height
+
+      attr_accessor :original_height
 
       # Specifies which borders to enable. Must be an array of zero or more of:
       # <tt>[:left, :right, :top, :bottom]</tt>.
@@ -154,6 +163,13 @@ module Prawn
       # anything.
       #
       attr_reader :dummy_cells
+
+      def filtered_dummy_cells(row_number = false, new_page = false)
+        @dummy_cells unless row_number
+        @dummy_cells.map do |dummy_cell|
+          dummy_cell if (dummy_cell.row <= row_number && !new_page) || (dummy_cell.row > row_number && new_page)
+        end.compact.uniq
+      end
 
       # Instantiates a Cell based on the given options. The particular class of
       # cell returned depends on the :content argument. See the Prawn::Table
@@ -220,6 +236,9 @@ module Prawn
         @dummy_cells = []
 
         options.each { |k, v| send("#{k}=", v) }
+        
+        # save the height so we can get back to it later
+        @original_height = options[:height]
 
         @initializer_run = true
       end
@@ -309,6 +328,22 @@ module Prawn
         defined?(@height) && @height || (content_height + padding_top + padding_bottom)
       end
 
+      def calculate_height_ignoring_span(respect_original_height = true)
+        # if a custom height was set, don't recalculate it
+        # if respect_original_height is set
+        return original_height if original_height && respect_original_height
+        natural_content_height + padding_top + padding_bottom 
+      end
+
+      def recalculate_height_ignoring_span(respect_original_height = true)
+        @height = calculate_height_ignoring_span(respect_original_height)
+        @height
+      end
+
+      def height_of_cell
+        @height
+      end
+      
       # Returns the cell's height in points, inclusive of padding. If the cell
       # is the master cell of a rowspan, returns the width of the entire span
       # group.
