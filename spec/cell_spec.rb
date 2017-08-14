@@ -104,6 +104,11 @@ describe "Prawn::Table::Cell" do
       expect(c.width).to eq @pdf.width_of("text") + c.padding[1] + c.padding[3]
     end
 
+    it "should be calculated for multiline text" do
+      c = cell(:content => "text\na\nb")
+      expect(c.width).to eq @pdf.width_of("text") + c.padding[1] + c.padding[3]
+    end
+
     it "should be overridden by manual :width" do
       c = cell(:content => "text", :width => 400)
       expect(c.width).to eq 400
@@ -130,6 +135,11 @@ describe "Prawn::Table::Cell" do
 
     it "content_width should exclude padding" do
       c = cell(:content => "text", :padding => 10)
+      expect(c.content_width).to eq @pdf.width_of("text")
+    end
+
+    it "content_width should exclude padding with multiple lines" do
+      c = cell(:content => "text\na\nb", :padding => 10)
       expect(c.content_width).to eq @pdf.width_of("text")
     end
 
