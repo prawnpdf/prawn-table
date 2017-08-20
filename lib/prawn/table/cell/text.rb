@@ -135,12 +135,8 @@ module Prawn
         #
         def styled_width_of(text)
           options = @text_options.reject { |k| k == :style }
-          if text.empty?
-            0
-          else
-            with_font do
-              text.lines.map { |line| @pdf.width_of(line, options) }.max
-            end
+          with_font do
+            text.lines.map { |line| @pdf.width_of(line, options) }.max || 0
           end
         end
 
