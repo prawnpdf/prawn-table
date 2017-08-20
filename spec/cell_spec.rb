@@ -104,6 +104,11 @@ describe "Prawn::Table::Cell" do
       expect(c.width).to eq @pdf.width_of("text") + c.padding[1] + c.padding[3]
     end
 
+    it "should be calculated for empty text" do
+      c = cell(:content => "")
+      expect(c.width).to eq c.padding[1] + c.padding[3]
+    end
+
     it "should be calculated for multiline text" do
       c = cell(:content => "text\na\nb")
       expect(c.width).to eq @pdf.width_of("text") + c.padding[1] + c.padding[3]
@@ -136,6 +141,11 @@ describe "Prawn::Table::Cell" do
     it "content_width should exclude padding" do
       c = cell(:content => "text", :padding => 10)
       expect(c.content_width).to eq @pdf.width_of("text")
+    end
+
+    it "content_width should exclude padding for empty text" do
+      c = cell(:content => "", :padding => 10)
+      expect(c.content_width).to eq 0
     end
 
     it "content_width should exclude padding with multiple lines" do
