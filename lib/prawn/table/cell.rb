@@ -219,7 +219,7 @@ module Prawn
         @rowspan = 1
         @dummy_cells = []
 
-        options.each { |k, v| send("#{k}=", v) }
+        style(options)
 
         @initializer_run = true
       end

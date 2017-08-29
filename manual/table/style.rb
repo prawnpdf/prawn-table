@@ -7,6 +7,11 @@
 # also accepts a block that will be called for each cell and can be used for
 # some complex styling.
 #
+# Individual cell styles can also be applied when defining the data for the
+# table using a hash syntax for the cell.  This style will take precedence over
+# any table level cell styles.  See the "cell_text" section for a list of
+# options.
+
 require File.expand_path(File.join(File.dirname(__FILE__),
                                    %w[.. example_helper]))
 
@@ -19,4 +24,10 @@ Prawn::ManualBuilder::Example.generate(filename) do
       c.background_color = ((c.row + c.column) % 2).zero? ? '000000' : 'ffffff'
     end
   end
+  move_down 20
+
+  table(
+    [['A', 'B'],['C', { content: 'D', text_color: 'ff0000' }]],
+    cell_style: { text_color: '0000ff' }
+  )
 end
