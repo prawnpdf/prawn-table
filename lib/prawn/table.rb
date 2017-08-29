@@ -8,14 +8,14 @@
 
 
 require 'prawn'
-require_relative 'table/column_width_calculator'
-require_relative 'table/cell'
-require_relative 'table/cells'
-require_relative 'table/cell/in_table'
-require_relative 'table/cell/text'
-require_relative 'table/cell/subtable'
-require_relative 'table/cell/image'
-require_relative 'table/cell/span_dummy'
+require 'prawn/table/column_width_calculator'
+require 'prawn/table/cell'
+require 'prawn/table/cells'
+require 'prawn/table/cell/in_table'
+require 'prawn/table/cell/text'
+require 'prawn/table/cell/subtable'
+require 'prawn/table/cell/image'
+require 'prawn/table/cell/span_dummy'
 
 module Prawn
   module Errors
