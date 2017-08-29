@@ -936,6 +936,67 @@ describe "Prawn::Table" do
         end
       end
     end
+
+    describe 'multipage option' do
+      describe 'when define width for all columns' do
+        it 'should render table without problems' do
+          pdf = Prawn::Document.new
+          pdf.table([["foo", "bar", "baz"]], column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(2)
+
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 5
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(2)
+
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 20
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(2)
+
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 50
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(4)
+
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"]] * 150
+          pdf.table(data, column_widths: [300, 200, 500], multipage: true)
+          expect(pdf.page_count).to eq(10)
+        end
+      end
+
+      describe 'when not define width for columns' do
+        it 'should render table' do
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"] * 10 ]
+          pdf.table(data, multipage: true)
+          expect(pdf.page_count).to eq(2)
+
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"] * 15 ]
+          pdf.table(data, multipage: true)
+          expect(pdf.page_count).to eq(3)
+
+          pdf = Prawn::Document.new
+          data = [["foo", "bar", "baz"] * 25 ]
+          pdf.table(data, multipage: true)
+          expect(pdf.page_count).to eq(4)
+        end
+      end
+
+      it "allow header with multipage" do
+        pdf = Prawn::Document.new
+        header = ["a", "b", "c"] * 10
+        data = [["foo", "bar", "baz"] * 10 ] * 35
+        data.insert(0, header)
+        pdf.table(data, multipage: true, header: true)
+        expect(pdf.page_count).to eq(4)
+
+        output = PDF::Inspector::Page.analyze(pdf.render)
+        output.pages[0][:strings][0..4].should == output.pages[2][:strings][0..4]
+      end
+    end
   end
 
   describe "#style" do
