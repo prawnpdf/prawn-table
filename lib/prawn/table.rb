@@ -47,8 +47,7 @@ module Prawn
   # Prawn::Table::
   #   Creates a subtable (a table within a cell). You can use
   #   Prawn::Document#make_table to create a table for use as a subtable
-  #   without immediately drawing it. See examples/table/bill.rb for a
-  #   somewhat complex use of subtables.
+  #   without immediately drawing it.
   # Array::
   #   Creates a simple subtable. Create a Table object using make_table (see
   #   above) if you need more control over the subtable's styling.
