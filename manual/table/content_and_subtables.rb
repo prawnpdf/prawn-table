@@ -19,9 +19,9 @@
 #
 require File.expand_path(File.join(File.dirname(__FILE__),
                                    %w[.. example_helper]))
-
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::ManualBuilder::Example.generate(filename) do
+  image_path = File.expand_path(File.join(File.dirname(__FILE__), %w[data images stef.jpg]))
   cell_1 = make_cell(:content => "this row content comes directly ")
   cell_2 = make_cell(:content => "from cell objects")
 
@@ -29,7 +29,6 @@ Prawn::ManualBuilder::Example.generate(filename) do
 
   my_table = make_table([ ["..."], ["subtable from another table"], ["..."] ])
 
-  image_path = "#{Prawn::DATADIR}/images/stef.jpg"
 
   table([ ["just a regular row", "", "", "blah blah blah"],
           [cell_1, cell_2, "", ""],
