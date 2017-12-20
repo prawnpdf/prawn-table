@@ -80,7 +80,7 @@ module Prawn
           # sure we have enough width to be at least one character wide. This is
           # a bit of a hack, but it should work well enough.
           unless defined?(@min_width) && @min_width
-            min_content_width = [natural_content_width, styled_width_of_single_character].min
+            min_content_width = [natural_content_width, styled_width_of_longest_word].min
             @min_width = padding_left + padding_right + min_content_width
             super
           end
@@ -140,14 +140,13 @@ module Prawn
 
         private
 
-        # Returns the greatest possible width of any single character
+        # Returns the greatest possible width of the longest word in content
         #   under the given text options.
         # (We use this to determine the minimum width of a table cell)
-        # (Although we currently determine this by measuring "M", it should really
-        #   use whichever character is widest under the current font)
         #
-        def styled_width_of_single_character
-          styled_width_of("M")
+        def styled_width_of_longest_word
+          longest_word = @content.split(" ").max_by(&:length)
+          styled_width_of(longest_word)
         end
       end
     end
