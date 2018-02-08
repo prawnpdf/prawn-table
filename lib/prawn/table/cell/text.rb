@@ -17,7 +17,7 @@ module Prawn
 
         TextOptions = [:inline_format, :kerning, :size, :align, :valign,
           :rotate, :rotate_around, :leading, :single_line, :skip_encoding,
-          :overflow, :min_font_size]
+          :overflow, :min_font_size, :disable_wrap_by_char]
 
         TextOptions.each do |option|
           define_method("#{option}=") { |v| @text_options[option] = v }

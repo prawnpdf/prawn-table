@@ -1,11 +1,11 @@
 # encoding: utf-8
 #
 # Text cells accept the following options: <code>align</code>,
-# <code>font</code>, <code>font_style</code>, <code>inline_format</code>,
-# <code>kerning</code>, <code>leading</code>, <code>min_font_size</code>,
-# <code>overflow</code>, <code>rotate</code>, <code>rotate_around</code>,
-# <code>single_line</code>, <code>size</code>, <code>text_color</code>,
-# and <code>valign</code>.
+# <code>disable_wrap_by_char</code>, <code>font</code>, <code>font_style</code>,
+# <code>inline_format</code>, <code>kerning</code>, <code>leading</code>,
+# <code>min_font_size</code>, <code>overflow</code>, <code>rotate</code>,
+# <code>rotate_around</code>, <code>single_line</code>, <code>size</code>,
+# <code>text_color</code> and <code>valign</code>.
 #
 # Most of these style options are direct translations from the text methods
 # styling options.
