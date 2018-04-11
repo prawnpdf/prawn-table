@@ -36,7 +36,7 @@ describe "Prawn::Table::Cell" do
     end
 
     it "should convert nil, Numeric, and Date values to strings" do
-      [nil, 123, 123.45, Date.today].each do |value|
+      [nil, 123, 123.45, Date.today, Time.new].each do |value|
         c = @pdf.cell(:content => value)
         expect(c).to be_a_kind_of Prawn::Table::Cell::Text
         expect(c.content).to eq value.to_s

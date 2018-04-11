@@ -1,5 +1,6 @@
 ## Master
 
+* Enhancement: Allow time values to be added to a table cell. (Michael MacDonald, PR [#103](https://github.com/prawnpdf/prawn-table/pull/103))
 * Bugfix: Use the cell's specified font to calculate the cell width. (Jesse Doyle, PR [#60](https://github.com/prawnpdf/prawn-table/pull/60), issue [#42](https://github.com/prawnpdf/prawn-table/issues/42))
 
 ## 0.2.3
