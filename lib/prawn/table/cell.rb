@@ -162,7 +162,7 @@ module Prawn
       def self.make(pdf, content, options={})
         at = options.delete(:at) || [0, pdf.cursor]
         content = content.to_s if content.nil? || content.kind_of?(Numeric) ||
-          content.kind_of?(Date)
+          content.kind_of?(Date) || content.kind_of?(Time)
 
         if content.is_a?(Hash)
           if content[:image]
