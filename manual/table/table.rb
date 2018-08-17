@@ -36,7 +36,7 @@ Prawn::ManualBuilder::Example.generate("table.pdf", :page_size => "FOLIO") do
     end
 
     p.intro do
-      prose("Prawn comes with table support out of the box. Tables can be styled in whatever way you see fit. The whole table, rows, columns and cells can be styled independently from each other.
+      prose("Prawn-table provides support for tables in Prawn. Tables can be styled in whatever way you see fit. The whole table, rows, columns and cells can be styled independently from each other.
 
       The examples show:")
 

@@ -17,11 +17,11 @@ module Prawn
         attr_reader :subtable
 
         def initialize(pdf, point, options={})
-          super
-          @subtable = options[:content]
+          options[:padding] ||= [0, 0, 0, 0]
 
-          # Subtable padding defaults to zero
-          @padding = [0, 0, 0, 0]
+          super
+
+          @subtable = options[:content]
         end
 
         # Sets the text color of the entire subtable.
