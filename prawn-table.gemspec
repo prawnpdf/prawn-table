@@ -16,7 +16,6 @@ Gem::Specification.new do |spec|
   spec.test_files = Dir[ "spec/*_spec.rb" ]
   spec.authors = ["Gregory Brown","Brad Ediger","Daniel Nelson","Jonathan Greenberg","James Healy", "Hartwig Brandl"]
   spec.email = ["gregory.t.brown@gmail.com","brad@bradediger.com","dnelson@bluejade.com","greenberg@entryway.net","jimmy@deefa.com", "mail@hartwigbrandl.at"]
-  spec.rubyforge_project = "prawn"
   spec.licenses = %w(PRAWN GPL-2.0 GPL-3.0)
 
   spec.add_dependency('prawn', '>= 1.3.0', '< 3.0.0')
