@@ -672,27 +672,24 @@ module Prawn
       y_positions.each_with_index { |y, i| row(i).y = y }
     end
 
-    # Sets up a bounding box to position the table according to the specified
-    # :position option, and yields.
+    # Adjusts the box padding to position the table according to the specified
+    # :position option, then yields.
     #
     def with_position
-      x = case defined?(@position) && @position || :left
-          when :left   then return yield
-          when :center then (@pdf.bounds.width - width) / 2.0
-          when :right  then  @pdf.bounds.width - width
-          when Numeric then  @position
+      pad_left, pad_right = case defined?(@position) && @position || :left
+          when :left   then [0, 0]
+          when :center then [(@pdf.bounds.width - width) / 2.0] * 2
+          when :right  then [@pdf.bounds.width - width, 0]
+          when Numeric then [@position, 0]
           else raise ArgumentError, "unknown position #{@position.inspect}"
           end
-      dy = @pdf.bounds.absolute_top - @pdf.y
-      final_y = nil
-
-      @pdf.bounding_box([x, @pdf.bounds.top], :width => width) do
-        @pdf.move_down dy
+      if pad_left > 0
+        @pdf.indent pad_left, pad_right do
+          yield
+        end
+      else
         yield
-        final_y = @pdf.y
       end
-
-      @pdf.y = final_y
     end
 
   end

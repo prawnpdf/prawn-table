@@ -689,22 +689,34 @@ describe "Prawn::Table" do
     end
 
     describe "position" do
+      it "should not position table if :position => :left" do
+        expect(@pdf).not_to receive(:indent)
+
+        @pdf.table([["foo"]], :column_widths => 500, :position => :left)
+      end
+
       it "should center tables with :position => :center" do
-        expect(@pdf).to receive(:bounding_box).with([(@pdf.bounds.width - 500) / 2.0, anything], kind_of(Hash))
+        expect(@pdf).to receive(:indent).with((@pdf.bounds.width - 500) / 2.0, (@pdf.bounds.width - 500) / 2.0)
 
         @pdf.table([["foo"]], :column_widths => 500, :position => :center)
       end
 
       it "should right-align tables with :position => :right" do
-        expect(@pdf).to receive(:bounding_box).with([@pdf.bounds.width - 500, anything], kind_of(Hash))
+        expect(@pdf).to receive(:indent).with(@pdf.bounds.width - 500, 0)
 
         @pdf.table([["foo"]], :column_widths => 500, :position => :right)
       end
 
       it "should accept a Numeric" do
-        expect(@pdf).to receive(:bounding_box).with([123, anything], kind_of(Hash))
+        expect(@pdf).to receive(:indent).with(123, 0)
 
         @pdf.table([["foo"]], :column_widths => 500, :position => 123)
+      end
+
+      it "should not position table if table width matches width of bounds" do
+        expect(@pdf).not_to receive(:indent)
+
+        @pdf.table([["foo"]], :column_widths => @pdf.bounds.width, :position => :center)
       end
 
       it "should raise_error an ArgumentError on unknown :position" do
