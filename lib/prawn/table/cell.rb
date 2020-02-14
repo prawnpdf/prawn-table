@@ -161,8 +161,6 @@ module Prawn
       #
       def self.make(pdf, content, options={})
         at = options.delete(:at) || [0, pdf.cursor]
-        content = content.to_s if content.nil? || content.kind_of?(Numeric) ||
-          content.kind_of?(Date)
 
         if content.is_a?(Hash)
           if content[:image]
@@ -173,6 +171,9 @@ module Prawn
         else
           options[:content] = content
         end
+
+        content = content.to_s if content.nil? || content.kind_of?(Numeric) ||
+          content.kind_of?(Date)
 
         options[:content] = content = "" if content.nil?
 
