@@ -592,7 +592,7 @@ describe "Image cells" do
   describe "with default options" do
     before(:each) do
       @cell = Prawn::Table::Cell.make(@pdf,
-        :image => "#{Prawn::DATADIR}/images/prawn.png")
+        :image => file_fixture("prawn.png").to_s)
     end
 
     it "should create a Cell::Image" do
@@ -608,7 +608,7 @@ describe "Image cells" do
   describe "hash syntax" do
     before(:each) do
       @table = @pdf.make_table([[{
-        :image => "#{Prawn::DATADIR}/images/prawn.png",
+        :image => file_fixture("prawn.png").to_s,
         :scale => 2,
         :fit => [100, 200],
         :image_width => 123,
