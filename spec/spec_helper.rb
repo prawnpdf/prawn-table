@@ -26,6 +26,7 @@ Dir[File.dirname(__FILE__) + "/extensions/**/*.rb"].each {|f| require f }
 
 RSpec.configure do |config|
   config.include EncodingHelpers
+  config.include FileFixtureHelper
 end
 
 def create_pdf(klass=Prawn::Document)
