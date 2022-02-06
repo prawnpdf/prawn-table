@@ -1,7 +1,7 @@
 # Prawn::Table
 
 [![Gem Version](https://badge.fury.io/rb/prawn-table.png)](http://badge.fury.io/rb/prawn-table)
-[![Build Status](https://secure.travis-ci.org/prawnpdf/prawn-table.png)](http://travis-ci.org/prawnpdf/prawn-table)
+![Build Status](https://github.com/prawnpdf/prawn-table/actions/workflows/tests.yml/badge.svg)
 [![Code Climate](https://codeclimate.com/github/prawnpdf/prawn-table.png)](https://codeclimate.com/github/prawnpdf/prawn-table)
 ![Maintained: PRs accepted](https://img.shields.io/badge/maintained-PRs_accepted-orange.png)
 

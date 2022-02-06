@@ -943,13 +943,15 @@ describe "Prawn::Table" do
         " block" do
 
       stylable = double
-      expect(stylable).to receive(:style).with(:foo => :bar).once.and_yield
+      expect(stylable).to receive(:style).with({:foo => :bar}).once.and_yield
 
       block = double
       expect(block).to receive(:kick).once
 
       Prawn::Document.new do
-        table([["x"]]) { style(stylable, :foo => :bar) { block.kick } }
+        table([["x"]]) do
+          style(stylable, {:foo => :bar}) { block.kick }
+        end
       end
     end
 
