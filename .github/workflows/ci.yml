@@ -21,7 +21,6 @@ jobs:
           - "2.7"
           - "3.0.0"
           - "3.0"
-          - ruby-head
           - jruby-9.2
           - jruby-9.3
     steps:
