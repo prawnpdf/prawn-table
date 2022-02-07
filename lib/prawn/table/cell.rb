@@ -161,20 +161,16 @@ module Prawn
       #
       def self.make(pdf, content, options={})
         at = options.delete(:at) || [0, pdf.cursor]
-        content = content.to_s if content.nil? || content.kind_of?(Numeric) ||
-          content.kind_of?(Date)
+
+        return Cell::Image.new(pdf, at, content) if content.is_a?(Hash) && content[:image]
 
         if content.is_a?(Hash)
-          if content[:image]
-            return Cell::Image.new(pdf, at, content)
-          end
           options.update(content)
           content = options[:content]
-        else
-          options[:content] = content
         end
 
-        options[:content] = content = "" if content.nil?
+        content = content.to_s if stringify_content?(content)
+        options[:content] = content
 
         case content
         when Prawn::Table::Cell
@@ -189,6 +185,15 @@ module Prawn
         else
           raise Errors::UnrecognizedTableContent
         end
+      end
+
+      def self.stringify_content?(content)
+        return true if content.nil?
+        return true if content.kind_of?(Numeric)
+        return true if content.kind_of?(Date)
+        return true if content.kind_of?(Time)
+
+        false
       end
 
       # A small amount added to the bounding box width to cover over floating-
