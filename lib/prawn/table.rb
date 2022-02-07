@@ -26,6 +26,10 @@ module Prawn
     # This error is raised when an empty or nil table is rendered
     #
     EmptyTable = Class.new(StandardError)
+
+    # Raised when unrecognized content is provided for a table cell.
+    #
+    UnrecognizedTableContent = Class.new(StandardError) unless defined?(::Prawn::Errors::UnrecognizedTableContent)
   end
 
   # Next-generation table drawing for Prawn.
