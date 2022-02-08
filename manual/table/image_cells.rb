@@ -17,7 +17,7 @@ require File.expand_path(File.join(File.dirname(__FILE__),
 
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::ManualBuilder::Example.generate(filename) do
-  image = "#{Prawn::DATADIR}/images/prawn.png"
+  image = File.expand_path("../images/prawn.png", __dir__)
 
   table [
     ["Standard image cell",   {:image => image}],
