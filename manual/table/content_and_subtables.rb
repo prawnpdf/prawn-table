@@ -29,7 +29,7 @@ Prawn::ManualBuilder::Example.generate(filename) do
 
   my_table = make_table([ ["..."], ["subtable from another table"], ["..."] ])
 
-  image_path = "#{Prawn::DATADIR}/images/stef.jpg"
+  image_path = File.expand_path("../images/stef.jpg", __dir__)
 
   table([ ["just a regular row", "", "", "blah blah blah"],
           [cell_1, cell_2, "", ""],
