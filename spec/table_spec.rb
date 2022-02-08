@@ -982,8 +982,9 @@ describe "Prawn::Table" do
     it "should ignore headers" do
       data = [["header"], ["foo"], ["bar"], ["baz"]]
       pdf = Prawn::Document.new
-      t = pdf.table(data, :header => true,
-                    :row_colors => ['cccccc', 'ffffff']) do
+      t = pdf.table(data,
+                    { :header => true,
+                      :row_colors => ['cccccc', 'ffffff']}) do
         row(0).background_color = '333333'
       end
 
@@ -993,8 +994,9 @@ describe "Prawn::Table" do
     it "stripes rows consistently from page to page, skipping header rows" do
       data = [["header"]] + [["foo"]] * 70
       pdf = Prawn::Document.new
-      t = pdf.make_table(data, :header => true,
-          :row_colors => ['cccccc', 'ffffff']) do
+      t = pdf.make_table(data,
+                         { :header => true,
+                           :row_colors => ['cccccc', 'ffffff']}) do
         cells.padding = 0
         cells.size = 9
         row(0).size = 11

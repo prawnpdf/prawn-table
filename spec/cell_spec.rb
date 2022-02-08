@@ -407,7 +407,7 @@ describe "Prawn::Table::Cell" do
       expect(@pdf).to receive(:stroke_color=).with("ff00ff")
 
       c = @pdf.cell(:content => "text",
-        :border_color => %w[ff0000 00ff00 0000ff ff00ff])
+                    :border_color => %w[ff0000 00ff00 0000ff ff00ff])
 
       expect(c.border_colors).to eq %w[ff0000 00ff00 0000ff ff00ff]
     end
@@ -434,7 +434,7 @@ describe "Prawn::Table::Cell" do
       expect(@pdf).to receive(:line_width=).with(5)
 
       c = @pdf.cell(:content => "text",
-        :border_width => [2, 3, 4, 5])
+                    :border_width => [2, 3, 4, 5])
       expect(c.border_widths).to eq [2, 3, 4, 5]
     end
 
@@ -455,7 +455,7 @@ describe "Prawn::Table::Cell" do
 
     it "should set border lines with :border_lines" do
       c = @pdf.cell(:content => "text",
-        :border_lines => [:solid, :dotted, :dashed, :solid])
+                    :border_lines => [:solid, :dotted, :dashed, :solid])
       expect(c.border_lines).to eq [:solid, :dotted, :dashed, :solid]
     end
   end
