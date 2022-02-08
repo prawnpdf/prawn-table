@@ -1,14 +1,11 @@
-#encoding: utf-8 
+# frozen_string_literal: true
 
-require "bundler"
-Bundler.setup
+GEMSPEC = File.expand_path('prawn-table.gemspec', __dir__)
+require 'prawn/dev/tasks'
 
-require 'rake'
-require 'rspec/core/rake_task'
 require 'yard'
-require 'rubygems/package_task'
 
-task :default => [:spec]
+task default: %i[spec rubocop]
 
 desc "Run all rspec files"
 RSpec::Core::RakeTask.new("spec") do |c|
