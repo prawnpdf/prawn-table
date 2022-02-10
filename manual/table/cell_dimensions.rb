@@ -25,12 +25,12 @@ Prawn::ManualBuilder::Example.generate(filename) do
     move_down 20
   end
 
-  text "Padding can also be set with an array by specifying values for all sides: [0, 0, 0, 30]" 
+  text "Padding can also be set with an array by specifying values for all sides: [0, 0, 0, 30]"
   table(data, :cell_style => {:padding => [0, 0, 0, 30]}) # top, right, bottom, left
-  
-  text "Padding can also be set by specifying only vertical and horizontal values: [0,30]" 
+
+  text "Padding can also be set by specifying only vertical and horizontal values: [0,30]"
   table(data, :cell_style => {:padding => [0, 30]}) # vertical, horizontal
-  
-  text "Padding can also be set by specifying top, horizontal and bottom values: [0,30,10]" 
-  table(data, :cell_style => {:padding => [0,30,10]}) # top, horizontal, bottom
+
+  text "Padding can also be set by specifying top, horizontal and bottom values: [0,30,10]"
+  table(data, :cell_style => {:padding => [0, 30, 10]}) # top, horizontal, bottom
 end
