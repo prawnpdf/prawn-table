@@ -1618,9 +1618,9 @@ describe "colspan / rowspan" do
     t = @pdf.table([['col1', 'col2'],
                     ['val1', { content: 'val2', align: :left }]],
                    cell_style: { align: :center })
-    t.cells[0, 0].align.should == :center
-    t.cells[0, 1].align.should == :center
-    t.cells[1, 0].align.should == :center
-    t.cells[1, 1].align.should == :left
+    expect(t.cells[0, 0].align).to eq :center
+    expect(t.cells[0, 1].align).to eq :center
+    expect(t.cells[1, 0].align).to eq :center
+    expect(t.cells[1, 1].align).to eq :left
   end
 end
