@@ -1613,4 +1613,14 @@ describe "colspan / rowspan" do
     pdf.render
     expect(pdf.page_count).to eq 1
   end
+
+  it 'illustrates issue #56 cell style should not be overwritten by table style', issue: 56 do
+    t = @pdf.table([['col1', 'col2'],
+                    ['val1', { content: 'val2', align: :left }]],
+                   cell_style: { align: :center })
+    t.cells[0, 0].align.should == :center
+    t.cells[0, 1].align.should == :center
+    t.cells[1, 0].align.should == :center
+    t.cells[1, 1].align.should == :left
+  end
 end
