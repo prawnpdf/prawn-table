@@ -27,7 +27,7 @@ Prawn::ManualBuilder::Example.generate(filename) do
   move_down 20
 
   table(
-    [['A', 'B'],['C', { content: 'D', text_color: 'ff0000' }]],
+    [%w[A B], ['C', { content: 'D', text_color: 'ff0000' }]],
     cell_style: { text_color: '0000ff' }
   )
 end

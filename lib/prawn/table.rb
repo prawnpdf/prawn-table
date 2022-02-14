@@ -528,10 +528,10 @@ module Prawn
 
           # Build the cell and store it in the Cells collection.
           cell = if cell_data.is_a?(Hash)
-            Cell.make(@pdf, cell_style.merge(cell_data))
-          else
-            Cell.make(@pdf, cell_data, cell_style)
-          end
+                   Cell.make(@pdf, cell_style.merge(cell_data))
+                 else
+                   Cell.make(@pdf, cell_data, cell_style)
+                 end
           cells[row_number, column_number] = cell
 
           # Add dummy cells for the rest of the cells in the span group. This
