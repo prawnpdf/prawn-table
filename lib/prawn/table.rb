@@ -139,10 +139,13 @@ module Prawn
     #   above for details on available options.
     #
     def initialize(data, document, options={}, &block)
+      table_opts = options.dup
       @pdf = document
-      @cells = make_cells(data, options.delete(:cell_style) || {})
+      @cells = make_cells(data, table_opts.delete(:cell_style) || {})
       @header = false
-      options.each { |k, v| send("#{k}=", v) }
+      table_opts.each do |k, v|
+        send("#{k}=", v) if respond_to?("#{k}=")
+      end
 
       if block
         block.arity < 1 ? instance_eval(&block) : block[self]
