@@ -1623,4 +1623,22 @@ describe "colspan / rowspan" do
     expect(t.cells[1, 0].align).to eq :center
     expect(t.cells[1, 1].align).to eq :left
   end
+
+  it 'calculates width correctly with colspan', :unresolved, issue: 54 do
+    pdf = Prawn::Document.new
+    pdf.table(
+      [
+        [{ content: 'row 1', colspan: 5 }],
+        [
+          { content: 'row 1, cell 1', colspan: 2 },
+          { content: 'row 1, cell 2', colspan: 2 },
+          { content: 'row 1, cell 3' }
+        ]
+      ],
+      column_widths: [50, 50, 150, 50, 50],
+      width: 350
+    )
+    pdf.render
+    pdf.page_count.should == 1
+  end
 end
