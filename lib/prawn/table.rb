@@ -477,7 +477,7 @@ module Prawn
       # we're at the top of our bounds
       return 0 if fits_on_page?(@pdf.bounds.height)
 
-      needed_height = row(0..number_of_header_rows).height
+      needed_height = row(0..number_of_header_rows).height_with_span
 
       # have we got enough room to fit the first row (including header row(s))
       use_reference_bounds = true
