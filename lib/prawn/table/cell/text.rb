@@ -82,8 +82,9 @@ module Prawn
           unless defined?(@min_width) && @min_width
             min_content_width = [natural_content_width, styled_width_of_single_character].min
             @min_width = padding_left + padding_right + min_content_width
-            super
           end
+
+          super
         end
 
         protected

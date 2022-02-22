@@ -112,6 +112,14 @@ module Prawn
       #
       attr_writer :height
 
+      # Manually specify the cell's min_width
+      #
+      attr_writer :min_width
+
+      # Manually specify the cell's max_width
+      #
+      attr_writer :max_width
+
       # Specifies which borders to enable. Must be an array of zero or more of:
       # <tt>[:left, :right, :top, :bottom]</tt>.
       #
