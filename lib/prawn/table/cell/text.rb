@@ -134,8 +134,7 @@ module Prawn
         # Returns the width of +text+ under the given text options.
         #
         def styled_width_of(text)
-          options = @text_options.reject { |k| k == :style }
-          with_font { @pdf.width_of(text, options) }
+          with_font { text_box(width: 10_000).used_width }
         end
 
         private
