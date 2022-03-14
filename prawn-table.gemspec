@@ -20,14 +20,15 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency('prawn', '>= 1.3.0', '< 3.0.0')
 
-  spec.add_development_dependency('pdf-inspector', '~> 1.1.0')
   spec.add_development_dependency('yard')
   spec.add_development_dependency('rspec', '~> 3.0')
   spec.add_development_dependency('rake')
   spec.add_development_dependency('simplecov')
+
+  spec.add_development_dependency('pdf-inspector', '>= 1.2.1', '< 2.0.a')
+  spec.add_development_dependency('pdf-reader', '~> 1.4', '>= 1.4.1')
   spec.add_development_dependency('prawn-dev', '~> 0.3.0')
-  spec.add_development_dependency('prawn-manual_builder', ">= 0.2.0")
-  spec.add_development_dependency('pdf-reader', '~>1.2')
+  spec.add_development_dependency('prawn-manual_builder', ">= 0.3.0")
 
   spec.homepage = "https://github.com/prawnpdf/prawn-table"
   spec.description = <<END_DESC
