@@ -13,6 +13,6 @@ Prawn::ManualBuilder::Example.generate(filename) do
   move_down 20
 
   text "Nowrap widths:"
-  table([[cell(:content => "Blah " * 10, :nowrap => true), "Blah " * 10]])
+  table([[make_cell(:content => "Blah " * 12, :nowrap => true), "Blah " * 12]])
   move_down 20
 end
