@@ -24,6 +24,7 @@ Prawn::ManualBuilder::Example.generate("table.pdf", :page_size => "FOLIO") do
       s.example "cell_borders_and_bg"
       s.example "cell_border_lines"
       s.example "cell_text"
+      s.example "nowrap"
       s.example "image_cells"
       s.example "span"
       s.example "before_rendering_page"
