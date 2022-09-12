@@ -17,7 +17,7 @@ module Prawn
 
         TextOptions = [:inline_format, :kerning, :size, :align, :valign,
           :rotate, :rotate_around, :leading, :single_line, :skip_encoding,
-          :overflow, :min_font_size]
+          :overflow, :min_font_size, :nowrap]
 
         TextOptions.each do |option|
           define_method("#{option}=") { |v| @text_options[option] = v }
@@ -48,7 +48,13 @@ module Prawn
         # from the final width if the text is long.
         #
         def natural_content_width
-          @natural_content_width ||= [styled_width_of(@content), @pdf.bounds.width].min
+          if nowrap == :whitespace
+            @natural_content_width ||= [@content.split(/\s/).compact.map { |word| styled_width_of(word) }.max || 0, @pdf.bounds.width || 0].min
+          else
+            @natural_content_width ||= [styled_width_of(@content), @pdf.bounds.width].min
+          end
+
+          @natural_content_width
         end
 
         # Returns the natural height of this block of text, wrapped to the
@@ -80,7 +86,7 @@ module Prawn
           # sure we have enough width to be at least one character wide. This is
           # a bit of a hack, but it should work well enough.
           unless defined?(@min_width) && @min_width
-            min_content_width = [natural_content_width, styled_width_of_single_character].min
+            min_content_width = nowrap ? natural_content_width : [natural_content_width, styled_width_of_single_character].min
             @min_width = padding_left + padding_right + min_content_width
             super
           end
@@ -135,7 +141,15 @@ module Prawn
         #
         def styled_width_of(text)
           options = @text_options.reject { |k| k == :style }
-          with_font { @pdf.width_of(text, options) }
+
+          with_font do
+            @pdf.width_of(text, options)
+            if text.empty?
+              0
+            else
+              text.lines.map { |line| @pdf.width_of(line, options) }.max
+            end
+          end
         end
 
         private

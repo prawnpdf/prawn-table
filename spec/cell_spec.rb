@@ -154,6 +154,21 @@ describe "Prawn::Table::Cell" do
         (5 * @pdf.height_of("text"))
     end
 
+    it "should have a width that can fit @content without wrapping" do
+      c = cell(:content => "text", :padding => 10, :nowrap => true)
+      min_content_width = c.min_width - c.padding[1] - c.padding[3]
+
+      expect(@pdf.height_of("text", :width => min_content_width)).to eq(@pdf.height_of("text"))
+    end
+
+    it "should have a width that can fit @content without wrapping even if it's multiline" do
+      c = cell(:content => "text\nlonger", :padding => 10, :nowrap => true)
+      min_content_width = c.min_width - c.padding[1] - c.padding[3]
+
+      expect(@pdf.height_of("text\nlonger", :width => min_content_width)).to be <
+        (3 * @pdf.height_of("text"))
+    end
+
     it "should defer min_width's evaluation of padding" do
       c = cell(:content => "text", :padding => 100)
       c.padding = 0
