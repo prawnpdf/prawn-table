@@ -48,7 +48,13 @@ module Prawn
         # from the final width if the text is long.
         #
         def natural_content_width
-          @natural_content_width ||= [styled_width_of(@content), @pdf.bounds.width].min
+          if nowrap == :whitespace
+            @natural_content_width ||= [@content.split(/[\s]/).map { |word| styled_width_of(word) }.max, @pdf.bounds.width].min
+          else
+            @natural_content_width ||= [styled_width_of(@content), @pdf.bounds.width].min
+          end
+
+          @natural_content_width
         end
 
         # Returns the natural height of this block of text, wrapped to the
