@@ -49,7 +49,7 @@ module Prawn
         #
         def natural_content_width
           if nowrap == :whitespace
-            @natural_content_width ||= [@content.split(/[\s]/).map { |word| styled_width_of(word) }.max, @pdf.bounds.width].min
+            @natural_content_width ||= [@content.split(/[\s]/).compact.map { |word| styled_width_of(word) }.max, @pdf.bounds.width].min
           else
             @natural_content_width ||= [styled_width_of(@content), @pdf.bounds.width].min
           end
