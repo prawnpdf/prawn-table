@@ -44,6 +44,11 @@ module Prawn
           @text_options[:style] = style
         end
 
+        # Set the font size
+        def font_size=(size)
+          @text_options[:size] = size
+        end
+
         # Returns the width of this text with no wrapping. This will be far off
         # from the final width if the text is long.
         #
