@@ -69,6 +69,10 @@ module Prawn
   #   numbering (for styling and other row-specific options) always indexes
   #   based on your data array. Whether or not you have a header, row(n) always
   #   refers to the nth element (starting from 0) of the +data+ array.
+  # +headers+::
+  #   If set to a multidimensional array of data, the defined header will be
+  #   repeated on every page.
+  #   +header+ must also be set to +true+ for this to function.
   # +column_widths+::
   #   Sets widths for individual columns. Manually setting widths can give
   #   better results than letting Prawn guess at them, as Prawn's algorithm
@@ -142,8 +146,13 @@ module Prawn
       @pdf = document
       @cells = make_cells(data, table_opts.delete(:cell_style) || {})
       @header = false
+      @headers = nil
       table_opts.each do |k, v|
         send("#{k}=", v) if respond_to?("#{k}=")
+      end
+
+      unless @headers.nil?
+        @headers = make_cells(@headers, table_opts.delete(:cell_style) || {})
       end
 
       if block
@@ -228,6 +237,12 @@ module Prawn
     # into the data array provided, with no modification.
     #
     attr_writer :header
+
+    # If set to a valid multidimensional array of data the data specified here
+    # will be used on each page as the header. +header+ must be set to +true+
+    # for this to function.
+    #
+    attr_accessor :headers
 
     # Accepts an Array of alternating row colors to stripe the table.
     #
@@ -506,7 +521,11 @@ module Prawn
     def header_rows
       header_rows = Cells.new
       number_of_header_rows.times do |r|
-        row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+        if @headers.nil?
+          row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+        else
+          headers.row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
+        end
       end
       header_rows
     end
@@ -656,6 +675,7 @@ module Prawn
     def set_column_widths
       column_widths.each_with_index do |w, col_num|
         column(col_num).width = w
+        headers.column(col_num).width = w if !headers.nil? && !headers.column(col_num).nil?
       end
     end
 
@@ -663,7 +683,10 @@ module Prawn
     # row is the same height.
     #
     def set_row_heights
-      row_heights.each_with_index { |h, row_num| row(row_num).height = h }
+      row_heights.each_with_index do |h, row_num|
+        row(row_num).height = h
+        headers.row(row_num).height = h if !headers.nil? && !headers.row(row_num).nil?
+      end
     end
 
     # Set each cell's position based on the widths and heights of cells
@@ -673,13 +696,19 @@ module Prawn
       # Calculate x- and y-positions as running sums of widths / heights.
       x_positions = column_widths.inject([0]) { |ary, x|
         ary << (ary.last + x); ary }[0..-2]
-      x_positions.each_with_index { |x, i| column(i).x = x }
+      x_positions.each_with_index do |x, i|
+        column(i).x = x
+        headers.column(i).x = x unless headers.nil? || headers.column(i).nil?
+      end
 
       # y-positions assume an infinitely long canvas starting at zero -- this
       # is corrected for in Table#draw, and page breaks are properly inserted.
       y_positions = row_heights.inject([0]) { |ary, y|
         ary << (ary.last - y); ary}[0..-2]
-      y_positions.each_with_index { |y, i| row(i).y = y }
+      y_positions.each_with_index do |y, i|
+        row(i).y = y
+        headers.row(i).y = y unless headers.nil? || headers.row(i).nil?
+      end
     end
 
     # Sets up a bounding box to position the table according to the specified

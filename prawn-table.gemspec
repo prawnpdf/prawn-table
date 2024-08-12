@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency('prawn-dev', '~> 0.3.0')
   spec.add_development_dependency('prawn-manual_builder', ">= 0.2.0")
   spec.add_development_dependency('pdf-reader', '~>1.2')
+  spec.add_development_dependency('matrix')
 
   spec.homepage = "https://github.com/prawnpdf/prawn-table"
   spec.description = <<END_DESC
