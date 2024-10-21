@@ -19,6 +19,7 @@ Gem::Specification.new do |spec|
   spec.licenses = %w(PRAWN GPL-2.0 GPL-3.0)
 
   spec.add_dependency('prawn', '>= 1.3.0', '< 3.0.0')
+  spec.add_dependency('csv')
 
   spec.add_development_dependency('pdf-inspector', '~> 1.1.0')
   spec.add_development_dependency('yard')
