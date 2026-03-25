@@ -141,6 +141,19 @@ module Prawn
       #
       attr_accessor :background_color
 
+      # Whether this cell is a header cell (TH) for accessibility.
+      # Set automatically for cells in header rows when the table has
+      # header: true.
+      #
+      attr_accessor :is_header_cell
+
+      # Whether this cell is a header cell.
+      #
+      # @return [Boolean]
+      def header?
+        !!@is_header_cell
+      end
+
       # Number of columns this cell spans. Defaults to 1.
       #
       attr_reader :colspan
@@ -414,14 +427,65 @@ module Prawn
       # and content.
       #
       def self.draw_cells(cells)
-        cells.each do |cell, pt|
-          cell.set_width_constraints
-          cell.draw_background(pt)
+        return if cells.empty?
+
+        first_entry = cells.first
+        first_cell = first_entry.is_a?(Array) ? first_entry[0] : first_entry
+        pdf = first_cell.instance_variable_get(:@pdf)
+        tagged = pdf.respond_to?(:tagged?) && pdf.tagged?
+
+        # Phase 1: backgrounds (decorative — artifact in tagged mode)
+        if tagged
+          pdf.artifact(type: :Layout) do
+            cells.each do |cell, pt|
+              cell.set_width_constraints
+              cell.draw_background(pt)
+            end
+          end
+        else
+          cells.each do |cell, pt|
+            cell.set_width_constraints
+            cell.draw_background(pt)
+          end
         end
 
-        cells.each do |cell, pt|
-          cell.draw_borders(pt)
-          cell.draw_bounded_content(pt)
+        # Phase 2: borders and content
+        if tagged
+          draw_cells_tagged(cells, pdf)
+        else
+          cells.each do |cell, pt|
+            cell.draw_borders(pt)
+            cell.draw_bounded_content(pt)
+          end
+        end
+      end
+
+      # Draw cells with accessibility structure tags (TR, TH, TD).
+      #
+      # @api private
+      def self.draw_cells_tagged(cells, pdf)
+        # Group cells by row for TR wrapping
+        rows = cells.group_by { |cell, _pt| cell.row }
+
+        rows.sort_by { |row_num, _| row_num }.each do |_row_num, row_cells|
+          pdf.structure_container(:TR) do
+            row_cells.each do |cell, pt|
+              # Skip span dummy cells — the master cell handles drawing
+              next if cell.is_a?(Cell::SpanDummy)
+
+              # Borders are decorative
+              pdf.artifact(type: :Layout) { cell.draw_borders(pt) }
+
+              # Content gets TH or TD tag
+              tag = cell.header? ? :TH : :TD
+              attrs = {}
+              attrs[:Scope] = :Column if tag == :TH
+
+              pdf.structure(tag, attrs) do
+                cell.draw_content_only(pt)
+              end
+            end
+          end
         end
       end
 
@@ -435,6 +499,15 @@ module Prawn
             draw_content
           end
         end
+      end
+
+      # Draws only the cell content (no borders or background).
+      # Used by the tagged PDF rendering path where borders are
+      # drawn separately as artifacts.
+      #
+      # @api private
+      def draw_content_only(pt)
+        draw_bounded_content(pt)
       end
 
       # x-position of the cell within the parent bounds.

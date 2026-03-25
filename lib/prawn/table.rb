@@ -153,6 +153,7 @@ module Prawn
       set_column_widths
       set_row_heights
       position_cells
+      mark_header_cells
     end
 
     # Number of rows in the table.
@@ -263,6 +264,15 @@ module Prawn
     # Draws the table onto the document at the document's current y-position.
     #
     def draw
+      if @pdf.respond_to?(:tagged?) && @pdf.tagged?
+        @pdf.structure_container(:Table) { draw_inner }
+      else
+        draw_inner
+      end
+    end
+
+    # @api private
+    def draw_inner
       with_position do
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
@@ -509,6 +519,17 @@ module Prawn
         row(r).each { |cell| header_rows[cell.row, cell.column] = cell.dup }
       end
       header_rows
+    end
+
+    # Marks cells in header rows as header cells for accessibility.
+    #
+    def mark_header_cells
+      n = number_of_header_rows
+      return if n == 0
+
+      @cells.each do |cell|
+        cell.is_header_cell = true if cell.row < n
+      end
     end
 
     # Converts the array of cellable objects given into instances of
