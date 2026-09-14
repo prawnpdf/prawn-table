@@ -15,6 +15,7 @@ require_relative 'table/cell/in_table'
 require_relative 'table/cell/text'
 require_relative 'table/cell/subtable'
 require_relative 'table/cell/image'
+require_relative 'table/cell/svg'
 require_relative 'table/cell/span_dummy'
 
 module Prawn

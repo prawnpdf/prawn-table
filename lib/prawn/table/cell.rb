@@ -163,6 +163,7 @@ module Prawn
         at = options.delete(:at) || [0, pdf.cursor]
 
         return Cell::Image.new(pdf, at, content) if content.is_a?(Hash) && content[:image]
+        return Cell::SVG.new(pdf, at, content) if content.is_a?(Hash) && content[:svg]
 
         if content.is_a?(Hash)
           options.update(content)
