@@ -68,7 +68,7 @@ module Prawn
         # Embed the SVG on the page
         #
         def draw_content
-          @pdf.svg File.read(@file), width: @svg_width, height: @svg_height
+          @pdf.svg File.read(@file), width: @svg_width, height: @svg_height, enable_web_requests: false
         end
       end
     end
