@@ -1353,6 +1353,69 @@ describe "Prawn::Table" do
 
   end
 
+  describe "in a tagged document" do
+    before(:each) do
+      skip "needs a Prawn version with tagged PDF support" unless Prawn::Document.method_defined?(:tagged?)
+    end
+
+    let(:pdf) { Prawn::Document.new(:tagged => true, :margin => 0) }
+
+    # Structure tree as nested arrays: an element is `[type, *kids]`, with
+    # `[type, scope]` for header cells and `[type, attributes]` for spanning cells.
+    def structure
+      objects = PDF::Reader.new(StringIO.new(pdf.render)).objects
+      walk =
+        lambda do |node|
+          node = objects.deref(node)
+          next nil unless node[:Type] == :StructElem
+
+          attributes = objects.deref(node[:A]) || {}
+          label = attributes.reject { |k, _| k == :O }
+          kids = objects.deref(node[:K]).map(&walk).compact
+          label.empty? ? [node[:S], *kids] : [node[:S], label]
+        end
+      catalog = objects.deref(objects.trailer[:Root])
+      objects.deref(objects.deref(catalog[:StructTreeRoot])[:K]).map(&walk)
+    end
+
+    it "tags rows and cells" do
+      pdf.table([%w[a b], %w[c d]])
+
+      expect(structure).to eq([[:Table, [:TR, [:TD], [:TD]], [:TR, [:TD], [:TD]]]])
+    end
+
+    it "tags header rows and row headers" do
+      pdf.table([["", "Status"], ["Case 1", "Open"]], :header => true, :row_header => true)
+
+      expect(structure).to eq([[:Table,
+                                [:TR, [:TH, { :Scope => :Column }], [:TH, { :Scope => :Column }]],
+                                [:TR, [:TH, { :Scope => :Row }], [:TD]]]])
+    end
+
+    it "tags spanning cells" do
+      pdf.table([[{ :content => "wide", :colspan => 2 }], %w[a b]])
+
+      expect(structure.first[1]).to eq([:TR, [:TD, { :ColSpan => 2 }]])
+    end
+
+    it "tags a header repeated on a new page only once" do
+      data = [["Header"]] + (1..80).map { |i| [i.to_s] }
+      pdf.table(data, :header => true)
+
+      expect(pdf.page_count).to be > 1
+      rows = structure.first.drop(1)
+      expect(rows.length).to eq(81)
+      expect(rows.count { |row| row[1][0] == :TH }).to eq(1)
+    end
+
+    it "does not tag tables in untagged documents" do
+      untagged = Prawn::Document.new
+      untagged.table([%w[a b]], :header => true)
+      objects = PDF::Reader.new(StringIO.new(untagged.render)).objects
+
+      expect(objects.deref(objects.trailer[:Root])).to_not have_key(:StructTreeRoot)
+    end
+  end
 end
 
 describe "colspan / rowspan" do
@@ -1623,4 +1686,5 @@ describe "colspan / rowspan" do
     expect(t.cells[1, 0].align).to eq :center
     expect(t.cells[1, 1].align).to eq :left
   end
+
 end

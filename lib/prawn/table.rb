@@ -69,6 +69,10 @@ module Prawn
   #   numbering (for styling and other row-specific options) always indexes
   #   based on your data array. Whether or not you have a header, row(n) always
   #   refers to the nth element (starting from 0) of the +data+ array.
+  # +row_header+::
+  #   If set to +true+, the first column holds the header of each row. If set
+  #   to an Integer, the first +x+ columns do. This only matters in a tagged
+  #   document, where those cells become row headers for screen readers.
   # +column_widths+::
   #   Sets widths for individual columns. Manually setting widths can give
   #   better results than letting Prawn guess at them, as Prawn's algorithm
@@ -229,6 +233,12 @@ module Prawn
     #
     attr_writer :header
 
+    # If +true+, designates the first column as the header of each row. If an
+    # integer, designates the number of columns to be treated as row headers.
+    # Only affects tagged documents.
+    #
+    attr_writer :row_header
+
     # Accepts an Array of alternating row colors to stripe the table.
     #
     attr_writer :row_colors
@@ -263,6 +273,13 @@ module Prawn
     # Draws the table onto the document at the document's current y-position.
     #
     def draw
+      return draw_table unless tagged?
+
+      @pdf.structure(:Table) { draw_table }
+    end
+
+    # @private
+    def draw_table
       with_position do
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
@@ -428,7 +445,76 @@ module Prawn
     # ink cells and then draw them
     def ink_and_draw_cells(cells_this_page, draw_cells = true)
       ink_cells(cells_this_page)
-      Cell.draw_cells(cells_this_page) if draw_cells
+      return unless draw_cells
+
+      if tagged?
+        draw_tagged_cells(cells_this_page)
+      else
+        Cell.draw_cells(cells_this_page)
+      end
+    end
+
+    # Draws cells like Cell.draw_cells, with the structure a screen reader
+    # needs: a TR per row and a TH or TD per cell. Backgrounds and borders are
+    # decoration, and a header row repeated on a new page was already read on
+    # the first one, so those are artifacts.
+    def draw_tagged_cells(cells)
+      @pdf.artifact(Type: :Layout) do
+        cells.each do |cell, pt|
+          cell.set_width_constraints
+          cell.draw_background(pt)
+        end
+      end
+
+      cells.group_by { |cell, _| cell.row }.each_value do |row|
+        if @header_row&.include?(row.first.first)
+          @pdf.artifact(Type: :Pagination) do
+            row.each do |cell, pt|
+              cell.draw_borders(pt)
+              cell.draw_bounded_content(pt)
+            end
+          end
+        else
+          @pdf.structure(:TR) do
+            row.each do |cell, pt|
+              @pdf.artifact(Type: :Layout) { cell.draw_borders(pt) }
+              next if cell.is_a?(Cell::SpanDummy)
+
+              @pdf.structure(*cell_structure(cell)) { cell.draw_bounded_content(pt) }
+            end
+          end
+        end
+      end
+    end
+
+    # Structure type and attributes of a cell in a tagged document.
+    def cell_structure(cell)
+      scope =
+        if cell.row < number_of_header_rows
+          :Column
+        elsif cell.column < number_of_row_headers
+          :Row
+        end
+
+      attributes = { O: :Table }
+      attributes[:Scope] = scope if scope
+      attributes[:RowSpan] = cell.rowspan if cell.rowspan > 1
+      attributes[:ColSpan] = cell.colspan if cell.colspan > 1
+
+      [scope ? :TH : :TD, attributes.size > 1 ? { A: attributes } : {}]
+    end
+
+    def number_of_row_headers
+      case @row_header
+      when Integer then @row_header
+      when true then 1
+      else 0
+      end
+    end
+
+    # Older Prawn versions cannot tag documents.
+    def tagged?
+      @pdf.respond_to?(:tagged?) && @pdf.tagged?
     end
 
     # ink and draw cells, then start a new page
